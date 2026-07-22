@@ -1,0 +1,42 @@
+services:
+  ai_agent_modes.manager:
+    class: Drupal\ai_agent_modes\ModeManager
+    arguments:
+      - '@entity_type.manager'
+      - '@plugin.manager.ai_agents'
+      - '@plugin.manager.ai.function_calls'
+      - '@module_handler'
+      - '@extension.list.module'
+      - '@logger.channel.ai_agent_modes'
+  Drupal\ai_agent_modes\ModeManagerInterface: '@ai_agent_modes.manager'
+
+  ai_agent_modes.selection_store:
+    class: Drupal\ai_agent_modes\SelectionStore
+    arguments:
+      - '@tempstore.private'
+      - '@current_user'
+  Drupal\ai_agent_modes\SelectionStoreInterface: '@ai_agent_modes.selection_store'
+
+  ai_agent_modes.agent_scope_subscriber:
+    class: Drupal\ai_agent_modes\EventSubscriber\AgentScopeSubscriber
+    arguments:
+      - '@ai_agent_modes.manager'
+      - '@ai_agent_modes.selection_store'
+      - '@logger.channel.ai_agent_modes'
+    tags:
+      - { name: event_subscriber }
+
+  logger.channel.ai_agent_modes:
+    parent: logger.channel_base
+    arguments:
+      - 'ai_agent_modes'
+
+  # Hook class keyed by its FQCN so the class resolver finds this definition
+  # (with a soft, possibly-absent ai_assistant_api.runner) instead of trying to
+  # autowire the constructor.
+  Drupal\ai_agent_modes\Hook\ChatFormHooks:
+    class: Drupal\ai_agent_modes\Hook\ChatFormHooks
+    arguments:
+      - '@?ai_assistant_api.runner'
+      - '@ai_agent_modes.manager'
+      - '@ai_agent_modes.selection_store'

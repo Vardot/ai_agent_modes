@@ -1,0 +1,10 @@
+entity.ai_agent_mode.collection:
+  title: 'Modes'
+  route_name: entity.ai_agent_mode.collection
+  base_route: entity.ai_agent_mode.collection
+
+ai_agent_modes.settings:
+  title: 'Settings'
+  route_name: ai_agent_modes.settings
+  base_route: entity.ai_agent_mode.collection
+  weight: 10

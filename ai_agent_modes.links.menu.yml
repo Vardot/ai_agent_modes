@@ -1,0 +1,6 @@
+entity.ai_agent_mode.collection:
+  title: 'AI Agent Modes'
+  description: 'Manage curated sub-agent subsets (modes) that scope AI agents.'
+  parent: ai.admin_settings
+  route_name: entity.ai_agent_mode.collection
+  weight: 20

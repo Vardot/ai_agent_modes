@@ -1,0 +1,30 @@
+{
+  "version": "0.2",
+  "language": "en",
+  "ignorePaths": [
+    "node_modules/**",
+    "vendor/**",
+    "*.min.js",
+    "package.json",
+    "package-lock.json",
+    "yarn.lock"
+  ],
+  "words": [
+    "agentmode",
+    "behaviour",
+    "chatbot",
+    "deepchat",
+    "drush",
+    "Normalises",
+    "orchestrator",
+    "tempstore",
+    "Varbase",
+    "varbase",
+    "Vardot",
+    "vardot",
+    "Webforms"
+  ],
+  "ignoreRegExpList": [
+    "/[A-Za-z0-9+/]{40,}={0,2}/"
+  ]
+}

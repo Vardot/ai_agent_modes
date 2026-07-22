@@ -1,0 +1,37 @@
+################################################################################
+# GitLab CI for the AI Agent Modes module on git.drupalcode.org.
+#
+# Uses the Drupal GitLabCI template (the DrupalCI replacement) for the
+# standard code-quality gates: composer validate, PHPCS + DrupalPractice,
+# PHPStan, PHPUnit (unit/kernel/functional), cspell, and ESLint against the
+# module's plain JS files. See:
+#   https://project.pages.drupalcode.org/gitlab_templates/
+################################################################################
+
+include:
+  - project: $_GITLAB_TEMPLATES_REPO
+    ref: $_GITLAB_TEMPLATES_REF
+    file:
+      - '/includes/include.drupalci.main.yml'
+      - '/includes/include.drupalci.variables.yml'
+      - '/includes/include.drupalci.workflows.yml'
+
+variables:
+  # Test against adjacent core versions too, not just the current one.
+  OPT_IN_TEST_PREVIOUS_MINOR: 1
+  OPT_IN_TEST_NEXT_MINOR: 1
+  OPT_IN_TEST_NEXT_MAJOR: 1
+  OPT_IN_TEST_MAX_PHP: 1
+
+# Blocking quality gates.
+phpcs:
+  allow_failure: false
+
+phpstan:
+  allow_failure: false
+
+phpunit:
+  allow_failure: false
+
+cspell:
+  allow_failure: false

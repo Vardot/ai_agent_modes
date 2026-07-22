@@ -1,0 +1,56 @@
+entity.ai_agent_mode.collection:
+  path: '/admin/config/ai/agent-modes'
+  defaults:
+    _entity_list: 'ai_agent_mode'
+    _title: 'AI Agent Modes'
+  requirements:
+    _permission: 'administer ai agent modes'
+
+entity.ai_agent_mode.add_form:
+  path: '/admin/config/ai/agent-modes/add'
+  defaults:
+    _entity_form: 'ai_agent_mode.add'
+    _title: 'Add AI agent mode'
+  requirements:
+    _permission: 'administer ai agent modes'
+
+entity.ai_agent_mode.edit_form:
+  path: '/admin/config/ai/agent-modes/{ai_agent_mode}'
+  defaults:
+    _entity_form: 'ai_agent_mode.edit'
+    _title: 'Edit AI agent mode'
+  requirements:
+    _permission: 'administer ai agent modes'
+
+entity.ai_agent_mode.delete_form:
+  path: '/admin/config/ai/agent-modes/{ai_agent_mode}/delete'
+  defaults:
+    _entity_form: 'ai_agent_mode.delete'
+    _title: 'Delete AI agent mode'
+  requirements:
+    _permission: 'administer ai agent modes'
+
+ai_agent_modes.set_selection:
+  path: '/ai-agent-modes/selection'
+  defaults:
+    _controller: 'Drupal\ai_agent_modes\Controller\SelectionController::set'
+  methods: [POST]
+  requirements:
+    _user_is_logged_in: 'TRUE'
+    _csrf_request_header_token: 'TRUE'
+
+ai_agent_modes.options:
+  path: '/ai-agent-modes/options/{agent}'
+  defaults:
+    _controller: 'Drupal\ai_agent_modes\Controller\SelectionController::options'
+  methods: [GET]
+  requirements:
+    _user_is_logged_in: 'TRUE'
+
+ai_agent_modes.settings:
+  path: '/admin/config/ai/agent-modes/settings'
+  defaults:
+    _form: 'Drupal\ai_agent_modes\Form\SettingsForm'
+    _title: 'AI Agent Modes settings'
+  requirements:
+    _permission: 'administer ai agent modes'

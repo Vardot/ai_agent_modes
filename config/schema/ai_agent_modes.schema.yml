@@ -1,0 +1,75 @@
+ai_agent_modes.ai_agent_mode.*:
+  type: config_entity
+  label: 'AI Agent Mode'
+  mapping:
+    id:
+      type: machine_name
+      label: 'ID'
+    uuid:
+      type: uuid
+      label: 'UUID'
+    label:
+      type: required_label
+      label: 'Label'
+    description:
+      type: text
+      label: 'Description'
+    weight:
+      type: weight
+      label: 'Weight'
+    status:
+      type: boolean
+      label: 'Status'
+    agent:
+      type: string
+      label: 'Parent agent'
+      description: 'The parent AI agent this mode applies to. Empty means the mode is generic and applies to any agent.'
+    sub_agents:
+      type: sequence
+      label: 'Sub-agents'
+      description: 'The set of AiAgent plugin IDs this mode exposes to the orchestrator.'
+      sequence:
+        type: string
+        label: 'Sub-agent plugin ID'
+    system_prompt_addition:
+      type: text
+      label: 'System prompt addition'
+      description: 'A short scoped directive prepended to the system prompt for this mode.'
+    surfaces:
+      type: sequence
+      label: 'Surfaces'
+      description: 'The chat surfaces this mode applies to. Empty means all surfaces.'
+      sequence:
+        type: string
+        label: 'Surface ID'
+
+ai_agent_modes.settings:
+  type: config_object
+  label: 'AI Agent Modes settings'
+  mapping:
+    canvas_position:
+      type: string
+      label: 'Canvas AI dropdown position'
+      constraints:
+        Choice:
+          - top
+          - above_input
+          - below_input
+          - toolbar
+
+block.settings.ai_agent_mode_selector:
+  type: block_settings
+  label: 'AI Agent Mode selector block'
+  mapping:
+    ai_assistant:
+      type: string
+      label: 'AI Assistant'
+      description: 'The AI Assistant entity whose parent agent this selector applies to.'
+    parent_agent:
+      type: string
+      label: 'Parent agent'
+      description: 'The parent AI agent plugin ID this selector applies to, used when no AI Assistant is set.'
+    surface:
+      type: string
+      label: 'Surface'
+      description: 'Optional surface ID used to filter which modes are shown.'

@@ -1,0 +1,4 @@
+administer ai agent modes:
+  title: 'Administer AI agent modes'
+  description: 'Create, edit and delete AI agent modes (curated sub-agent subsets).'
+  restrict access: true

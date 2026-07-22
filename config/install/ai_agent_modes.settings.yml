@@ -1,0 +1,7 @@
+# Where the mode dropdown sits in the Drupal Canvas AI panel.
+# top: full-width row at the top of the panel, above the chat.
+# above_input: its own row directly above the message box.
+# below_input: its own row directly under the message box.
+# toolbar: compact control inside the message box toolbar, between the
+# upload and send buttons (shown while the send button is visible).
+canvas_position: toolbar

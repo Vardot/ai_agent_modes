@@ -1,0 +1,5 @@
+entity.ai_agent_mode.add_form:
+  route_name: entity.ai_agent_mode.add_form
+  title: 'Add AI agent mode'
+  appears_on:
+    - entity.ai_agent_mode.collection

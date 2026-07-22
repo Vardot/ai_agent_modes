@@ -1,0 +1,26 @@
+chat:
+  version: 1.0.8
+  js:
+    js/chat-mode.js: {}
+  dependencies:
+    - core/drupal
+    - core/drupalSettings
+    - core/once
+
+canvas_ai:
+  version: 1.0.8
+  js:
+    js/canvas-ai.js: {}
+  dependencies:
+    - core/drupal
+    - core/drupalSettings
+    - core/once
+
+chatbot_deepchat:
+  version: 1.0.8
+  js:
+    js/chatbot-deepchat.js: {}
+  dependencies:
+    - core/drupal
+    - core/drupalSettings
+    - core/once
