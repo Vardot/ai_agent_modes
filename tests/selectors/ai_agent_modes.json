@@ -1,0 +1,23 @@
+{
+  "css": {
+    "mode collection table": "table.views-table, .region-content table, main table",
+    "mode add form": "form.ai-agent-mode-add-form, form[data-drupal-selector='ai-agent-mode-add-form'], form[id*='ai-agent-mode']",
+    "mode label field": "#edit-label, input[name='label']",
+    "mode agent select": "#edit-agent, select[name='agent']",
+    "mode sub agents wrapper": "#ai-agent-mode-sub-agents",
+    "mode sub agents checkboxes": "#ai-agent-mode-sub-agents input[type='checkbox']",
+    "mode child one checkbox": "input[name='sub_agents[test_child_one]']",
+    "mode child two checkbox": "input[name='sub_agents[test_child_two]']",
+    "mode system prompt addition": "#edit-system-prompt-addition, textarea[name='system_prompt_addition']",
+    "mode save button": "#edit-submit, .button--primary, input[value='Save']",
+    "mode add action link": "a[href$='/admin/config/ai/agent-modes/add']",
+
+    "mode selector": "select[name='mode']",
+    "mode selector free form option": "select[name='mode'] option[value='']",
+    "mode selector wrapper": ".ai-agent-modes-selector, .block-ai-agent-mode-selector"
+  },
+  "xpath": {
+    "mode add action link": "//a[contains(@href,'/admin/config/ai/agent-modes/add')]",
+    "mode selector option child one": "//select[@name='mode']/option[contains(.,'Test Child One')]"
+  }
+}

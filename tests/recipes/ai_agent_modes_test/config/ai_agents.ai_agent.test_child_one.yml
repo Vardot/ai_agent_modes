@@ -1,0 +1,22 @@
+langcode: en
+status: true
+dependencies: {  }
+id: test_child_one
+label: 'Test Child One'
+description: 'A deterministic sub-agent used only by the AI Agent Modes functional suite.'
+system_prompt: 'You are Test Child One.'
+secured_system_prompt: '[ai_agent:agent_instructions]'
+tools: {  }
+tool_settings: {  }
+tool_usage_limits: {  }
+default_information_tools: ''
+orchestration_agent: false
+triage_agent: false
+max_loops: 3
+max_loops_message: ''
+masquerade_roles: {  }
+exclude_users_role: false
+structured_output_enabled: false
+structured_output_schema: ''
+guardrail_set: null
+hostname_filter_disabled: false

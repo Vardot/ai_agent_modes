@@ -1,0 +1,24 @@
+langcode: en
+status: true
+dependencies: {  }
+id: test_orchestrator
+label: 'Test Orchestrator'
+description: 'A deterministic orchestrator that exposes two sub-agents, used only by the AI Agent Modes functional suite.'
+system_prompt: 'You orchestrate the test sub-agents.'
+secured_system_prompt: '[ai_agent:agent_instructions]'
+tools:
+  'ai_agents::ai_agent::test_child_one': true
+  'ai_agents::ai_agent::test_child_two': true
+tool_settings: {  }
+tool_usage_limits: {  }
+default_information_tools: ''
+orchestration_agent: true
+triage_agent: false
+max_loops: 3
+max_loops_message: ''
+masquerade_roles: {  }
+exclude_users_role: false
+structured_output_enabled: false
+structured_output_schema: ''
+guardrail_set: null
+hostname_filter_disabled: false

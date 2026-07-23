@@ -1,0 +1,26 @@
+langcode: en
+status: true
+dependencies: {  }
+id: test_assistant
+label: 'Test Assistant'
+description: 'A deterministic AI Assistant backed by the test orchestrator, used only by the AI Agent Modes functional suite.'
+system_prompt: ''
+pre_action_prompt: ''
+instructions: 'You are the AI Agent Modes test assistant.'
+allow_history: session_one_thread
+history_context_length: '5'
+error_message: 'Something went wrong.'
+specific_error_messages: {  }
+llm_provider: __default__
+llm_model: ''
+llm_configuration:
+  max_tokens: 4096
+  temperature: 1.0
+  frequency_penalty: 0
+  presence_penalty: 0
+  top_p: 1.0
+actions_enabled: {  }
+roles:
+  authenticated: authenticated
+use_function_calling: false
+ai_agent: test_orchestrator

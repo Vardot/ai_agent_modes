@@ -1,11 +1,22 @@
 ################################################################################
 # GitLab CI for the AI Agent Modes module on git.drupalcode.org.
 #
-# Uses the Drupal GitLabCI template (the DrupalCI replacement) for the
-# standard code-quality gates: composer validate, PHPCS + DrupalPractice,
-# PHPStan, PHPUnit (unit/kernel/functional), cspell, and ESLint against the
-# module's plain JS files. See:
+# Uses the Drupal GitLabCI template (the DrupalCI replacement) for the standard
+# code-quality gates: composer validate, PHPCS + DrupalPractice, PHPStan,
+# PHPUnit (unit/kernel/functional), cspell, and ESLint against the module's
+# browser js/ (canvas-ai.js, chat-mode.js, chatbot-deepchat.js). See:
 #   https://project.pages.drupalcode.org/gitlab_templates/
+#
+# On top of the template it adds:
+#   - 'eslint (step definitions)': lints the tests/ webship-js suite (CommonJS
+#     Node + Cucumber globals) with its own tests/.eslintrc.json. The template
+#     ESLint job keeps linting the module's browser js/ with Drupal core's
+#     config; tests/ is kept out of that run via .eslintignore.
+#   - The Varbase functional testing suite (webship-js: Playwright + Cucumber)
+#     BDD acceptance suite, tested against Drupal CMS - the distribution that
+#     ships the AI Assistant chatbot (drupal_cms_ai / ai_chatbot) and Canvas AI
+#     that this module integrates with. A default provider-free lane plus an
+#     amazee.ai free-trial live-provider lane (no API key needed).
 ################################################################################
 
 include:
@@ -22,6 +33,8 @@ variables:
   OPT_IN_TEST_NEXT_MINOR: 1
   OPT_IN_TEST_NEXT_MAJOR: 1
   OPT_IN_TEST_MAX_PHP: 1
+  # The module ships no CSS, so the template Stylelint job has nothing to lint.
+  SKIP_STYLELINT: 1
 
 # Blocking quality gates.
 phpcs:
@@ -35,3 +48,128 @@ phpunit:
 
 cspell:
   allow_failure: false
+
+# ─── ESLint on the webship-js step definitions ────────────────────────────────
+# The tests/ suite is CommonJS with Node / Cucumber globals, so it uses its own
+# tests/.eslintrc.json instead of Drupal core's browser config (which the
+# template ESLint job applies to the module's js/). tests/ is excluded from that
+# template run via .eslintignore, so this job is what lints the suite.
+'eslint (step definitions)':
+  stage: validate
+  needs: []
+  image: node:22
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+      when: on_success
+    - if: '$CI_COMMIT_REF_NAME =~ /^[0-9]+\.[0-9]+\.x$/'
+      when: on_success
+    - when: never
+  script:
+    - npm install --no-save eslint@8 eslint-config-prettier@8
+    - node ./node_modules/eslint/bin/eslint.js --no-ignore tests/step-definitions
+
+# ─── Varbase functional testing suite (webship-js: Playwright + Cucumber) ─────
+# Build a Drupal CMS site with this module via a Composer path repository, serve
+# it with Apache against the template's MySQL service, apply the testing recipe
+# (which enables the AI stack, seeds a parent orchestrator + two sub-agents + an
+# AI Assistant + one saved mode, and places the selector block), then run the
+# tests/ suite. The default `npm test` lane excludes @ai and @canvas-editor (see
+# cucumber.js), so it is an always-green functional lane with no live LLM
+# provider key required.
+.functional-testing:
+  extends: .testing-job-base
+  stage: test
+  needs: []
+  allow_failure: false
+  services:
+    - name: $_CONFIG_DOCKERHUB_ROOT/$_TARGET_DB_TYPE-$_TARGET_DB_VERSION:$_TARGET_DB_IMAGE_TAG
+      alias: database
+  variables:
+    LAUNCH_URL: "http://localhost"
+    LOGIN_USER: "webmaster"
+    LOGIN_PASS: "dD.123123ddd"
+    HEADLESS: "true"
+    SLOW_MO: "0"
+    BROWSER: "chromium"
+    FORCE_COLOR: "1"
+    _BUILD_DIR: "/tmp/site-build"
+    SITE_PACKAGE: "drupal/cms:^1"
+    INSTALL_PROFILE: "drupal_cms_installer"
+    DRUSH_BIN: "$_BUILD_DIR/vendor/bin/drush"
+    EXTRA_REQUIRE: ""
+    APPLY_AMAZEE_RECIPE: ""
+    CUCUMBER_TAGS: ""
+    TEST_CMD: "npm test"
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+      when: on_success
+    - if: '$CI_COMMIT_REF_NAME =~ /^[0-9]+\.[0-9]+\.x$/'
+      when: on_success
+    - when: never
+  artifacts:
+    when: on_failure
+    paths:
+      - tests/reports
+      - tests/screenshots
+      - tests/videos
+    expire_in: 1 week
+  before_script:
+    # Node 22 + Playwright (yarn 4 needs the node-modules linker; webship-js's
+    # postinstall can clobber cucumber.js, so back it up around yarn install).
+    - curl -fsSL https://deb.nodesource.com/setup_22.x | bash -
+    - apt-get install -y nodejs
+    - 'test -f .yarnrc.yml || echo "nodeLinker: node-modules" > .yarnrc.yml'
+    - cp cucumber.js .cucumber.js.bak
+    - corepack enable
+    - yarn install
+    - cp .cucumber.js.bak cucumber.js && rm .cucumber.js.bak
+    - ./node_modules/.bin/playwright install --with-deps chromium
+    # Build a fresh Drupal CMS site with this module via a Composer path repo.
+    # ai_agent_modes' dependencies (drupal/ai, drupal/ai_agents) are public on
+    # drupal.org, so they resolve from packages.drupal.org.
+    - composer create-project "$SITE_PACKAGE" $_BUILD_DIR --no-interaction --no-progress --no-install --no-scripts
+    - cd $_BUILD_DIR
+    - composer config minimum-stability dev
+    - composer config prefer-stable true
+    - composer config allow-plugins true -n
+    - composer config repositories.mut '{"type":"path","url":"'"$CI_PROJECT_DIR"'","options":{"symlink":true}}'
+    - composer require "drupal/ai_agent_modes:*@dev" drush/drush $EXTRA_REQUIRE --with-all-dependencies --no-interaction --no-progress
+    # Apache serves the built site against the MySQL service.
+    - mkdir -pv $_BUILD_DIR/web/sites/default/files $_BUILD_DIR/web/sites/simpletest
+    - chmod -R 777 $_BUILD_DIR/web/sites/default/files $_BUILD_DIR/web/sites/simpletest
+    - rm -rf /var/www/html && ln -s $_BUILD_DIR/web /var/www/html
+    - chown -R www-data:www-data $_BUILD_DIR
+    - service apache2 start
+    - export SIMPLETEST_DB=mysql://$MYSQL_USER:$MYSQL_PASSWORD@database/$MYSQL_DATABASE
+    # Install Drupal CMS, normalise the admin to "webmaster", then apply the
+    # testing recipe (enables the AI stack, seeds the agents / assistant / mode,
+    # and places the selector block in the Gin admin content region).
+    - $DRUSH_BIN --root=$_BUILD_DIR/web site:install $INSTALL_PROFILE --db-url=$SIMPLETEST_DB --account-name=webmaster --account-pass=dD.123123ddd --site-name="AI Agent Modes CI" -y
+    - $DRUSH_BIN --root=$_BUILD_DIR/web php:eval '$u=\Drupal\user\Entity\User::load(1); $u->setUsername("webmaster"); $u->setEmail("webmaster@example.test"); $u->setPassword("dD.123123ddd"); $u->save();'
+    - $DRUSH_BIN --root=$_BUILD_DIR/web recipe "$CI_PROJECT_DIR/tests/recipes/ai_agent_modes_test" -y
+    # amazee.ai lane only: provision the keyless free-trial provider so the @ai
+    # live-agent scenarios run against a real chat provider.
+    - |
+      if [ -n "$APPLY_AMAZEE_RECIPE" ]; then
+        $DRUSH_BIN --root=$_BUILD_DIR/web cache:rebuild
+        $DRUSH_BIN --root=$_BUILD_DIR/web recipe "$CI_PROJECT_DIR/tests/recipes/ai_agent_modes_amazee" -y
+      fi
+    - $DRUSH_BIN --root=$_BUILD_DIR/web cache:rebuild
+  script:
+    - cd "$CI_PROJECT_DIR"
+    - eval "$TEST_CMD"
+
+# Drupal CMS - the always-green, provider-free acceptance lane.
+'functional-testing (Drupal CMS)':
+  extends: .functional-testing
+
+# Drupal CMS with a live chat provider (amazee.ai free anonymous trial, no
+# secret required, so it runs on every pipeline including issue-fork ones).
+# Runs the @ai lane, selected through CUCUMBER_TAGS (cucumber-js ANDs a CLI
+# --tags with the profile tags, so the env var is used instead).
+'functional-testing (Drupal CMS - AI live agent - amazee.ai)':
+  extends: .functional-testing
+  variables:
+    EXTRA_REQUIRE: "drupal/ai_provider_amazeeio drupal/ai_simple_provider_installer:*@alpha"
+    APPLY_AMAZEE_RECIPE: "1"
+    CUCUMBER_TAGS: "@ai and not @wip"

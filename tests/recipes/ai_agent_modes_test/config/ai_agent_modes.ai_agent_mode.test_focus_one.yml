@@ -1,0 +1,12 @@
+langcode: en
+status: true
+dependencies: {  }
+id: test_focus_one
+label: 'Focus on Child One'
+description: 'A seeded mode that scopes the test orchestrator to a single sub-agent.'
+weight: 0
+agent: test_orchestrator
+sub_agents:
+  - test_child_one
+system_prompt_addition: 'Focus only on Test Child One for this request.'
+surfaces: {  }

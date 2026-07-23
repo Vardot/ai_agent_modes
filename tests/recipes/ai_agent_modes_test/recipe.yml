@@ -1,0 +1,24 @@
+name: 'AI Agent Modes test fixtures'
+description: >
+  Seeds a deterministic, provider-free fixture for the AI Agent Modes functional
+  suite: a parent "Test Orchestrator" agent exposing two sub-agents (Test Child
+  One / Test Child Two), an AI Assistant backed by that orchestrator, and one
+  saved mode. This lets the browser suite exercise mode CRUD, the selector
+  dropdown and the two chat-integration surfaces without depending on any
+  distribution's own agent config or on a live LLM provider. Apply with
+  `drush recipe`.
+type: 'Testing'
+install:
+  - ai
+  - ai_agents
+  - ai_assistant_api
+  - ai_chatbot
+  - ai_agent_modes
+# The parent agent, its two sub-agents, the AI Assistant, one saved mode and the
+# selector block (in the Gin admin content region) are created from this
+# recipe's own config/ directory when the recipe is applied.
+#
+# canvas_ai is intentionally NOT installed here: it pulls the heavy drupal/canvas
+# project, and the Canvas AI panel integration is proven through its client-side
+# data source (the /ai-agent-modes/options/<agent> endpoint, which needs only
+# ai_agents), not through the Canvas editor's React shadow DOM.

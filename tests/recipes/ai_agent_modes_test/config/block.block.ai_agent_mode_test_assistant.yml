@@ -1,0 +1,22 @@
+langcode: en
+status: true
+dependencies:
+  module:
+    - ai_agent_modes
+  theme:
+    - gin
+id: ai_agent_mode_test_assistant
+theme: gin
+region: content
+weight: -100
+provider: null
+plugin: ai_agent_mode_selector
+settings:
+  id: ai_agent_mode_selector
+  label: 'Mode selector (test assistant)'
+  label_display: visible
+  provider: ai_agent_modes
+  ai_assistant: test_assistant
+  parent_agent: ''
+  surface: ''
+visibility: {  }

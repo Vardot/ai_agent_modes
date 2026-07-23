@@ -1,0 +1,9 @@
+node_modules/
+# The tests/ webship-js suite (plus its root-level cucumber.js/
+# cucumber.shared.js config) is CommonJS (require/module.exports) with Node +
+# Cucumber globals; it is linted by the dedicated 'eslint (step definitions)'
+# CI job using tests/.eslintrc.json, not by the Drupal core eslint config the
+# template applies to the module's browser js/.
+tests/
+cucumber.js
+cucumber.shared.js
