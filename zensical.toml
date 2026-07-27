@@ -1,0 +1,37 @@
+[project]
+site_name = "AI Agent Modes"
+site_url = "https://project.pages.drupalcode.org/ai_agent_modes/"
+site_dir = "public"
+repo_url = "https://git.drupalcode.org/project/ai_agent_modes"
+repo_name = "drupal/ai_agent_modes"
+edit_uri = "/-/edit/1.0.x/docs/"
+
+nav = [
+  {"Home" = "index.md"},
+  {"Using the assistant" = [
+    {"Choosing a mode" = "info/choosing-a-mode.md"},
+  ]},
+  {"Administering" = [
+    {"Managing modes" = "info/managing-modes.md"},
+  ]},
+  {"Developing" = [
+    {"Developing with modes" = "info/developing-with-modes.md"},
+  ]},
+  {"Help" = [
+    {"Troubleshooting" = "help/troubleshooting.md"},
+  ]},
+]
+
+[[project.theme.palette]]
+media = "(prefers-color-scheme: light)"
+scheme = "default"
+primary = "blue"
+toggle.icon = "lucide/sun"
+toggle.name = "Switch to dark mode"
+
+[[project.theme.palette]]
+media = "(prefers-color-scheme: dark)"
+scheme = "slate"
+primary = "blue"
+toggle.icon = "lucide/moon"
+toggle.name = "Switch to light mode"

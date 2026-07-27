@@ -116,8 +116,19 @@ cspell:
   before_script:
     # Node 22 + Playwright (yarn 4 needs the node-modules linker; webship-js's
     # postinstall can clobber cucumber.js, so back it up around yarn install).
-    - curl -fsSL https://deb.nodesource.com/setup_22.x | bash -
-    - apt-get install -y nodejs
+    # Node 22, installed from the official tarball rather than through
+    # NodeSource. The NodeSource setup script regularly fails on the runner with
+    # "The requested URL returned error: 403" while fetching its signing key,
+    # which leaves the image's Node 20 in place; yarn then falls back to v1 and
+    # package.json's "node >= 22" engine check fails the job. The tarball needs
+    # no apt source and no GPG key. Fail fast if the version is still wrong.
+    - curl -fsSL https://nodejs.org/dist/latest-v22.x/ -o /tmp/node-index.html
+    - NODE_TARBALL=$(grep -oE 'node-v22\.[0-9.]+-linux-x64\.tar\.gz' /tmp/node-index.html | head -1)
+    - echo "Installing $NODE_TARBALL"
+    - curl -fsSL "https://nodejs.org/dist/latest-v22.x/$NODE_TARBALL" -o /tmp/node.tar.gz
+    - tar -xzf /tmp/node.tar.gz -C /usr/local --strip-components=1
+    - node -v
+    - case "$(node -v)" in v22.*) ;; *) echo "Expected Node 22, got $(node -v)"; exit 1 ;; esac
     - 'test -f .yarnrc.yml || echo "nodeLinker: node-modules" > .yarnrc.yml'
     - cp cucumber.js .cucumber.js.bak
     - corepack enable
