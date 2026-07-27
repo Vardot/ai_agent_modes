@@ -7,10 +7,15 @@
  * Every step drives the site through the browser only - no Drush, no shell.
  * The Mink-style navigation / assertion / form steps (`I am on ...`,
  * `I should see ...`, `I fill in ...`, `I press ...`), the JavaScript-error
- * check and the accessibility audits are all provided by webship-js. Only the
+ * check and the accessibility audits are all provided by webship-js. So are the
+ * table-row assertions (`I should see "..." in the "..." row`) and the radio
+ * assertions (`the radio button with value "..." should be selected`). Only the
  * steps below are module-specific: logging in a named test user, provisioning
- * the non-admin fixtures, asserting server-side access denial, placing the AI
- * Agent Mode selector block, and asserting the rendered dropdown's options.
+ * the non-admin fixtures, asserting server-side access denial, asserting the
+ * rendered dropdown's options, reading the options endpoint the chat surfaces
+ * build their dropdown from (its labels, how many options it offers and which
+ * dropdown placement it reports), and opening a row operation from an admin
+ * listing.
  *
  * Navigation and waiting reuse webship-js's own helpers - gotoUrl (friendly
  * navigation errors) and waitForPageLoad (BBR smart-settle: DOM ready, network
@@ -46,6 +51,12 @@ async function attempt(body, message) {
  * Uses Drupal's stable field IDs so the step is theme-independent (Olivero,
  * Claro/Gin and Gin all render `#edit-name` / `#edit-pass`).
  *
+ * The step asserts the session was really established: a rejected login
+ * re-renders the login form at /user/login with the reason in the message
+ * region, and the step fails there, quoting that reason. Without that check a
+ * failed login is silent and only surfaces later, as an unrelated step reading
+ * an anonymous 403 page.
+ *
  * Example #1: Given I am a logged in user with the "Webmaster" user
  * Example #2: Given I am a logged in user with the "webmaster" user
  * Example #3: Given I am a logged in user with the "Content editor" user
@@ -70,6 +81,20 @@ Given(/^I am a logged in user with( the)*( username)* "([^"]*)?"( user)?$/, asyn
     // matches a header search button.
     await this.page.locator('#user-login-form #edit-submit').first().click();
     await waitForPageLoad(this.page, this.minWaitTime && this.minWaitTime.page);
+    const outcome = await this.page.evaluate(() => {
+      const region = document.querySelector('[data-drupal-messages]');
+      return {
+        url: window.location.href,
+        onLoginForm: !!document.querySelector('form#user-login-form'),
+        message: region ? region.textContent.replace(/\s+/g, ' ').trim() : '',
+      };
+    });
+    // Both conditions together: a rejected login re-renders the form at
+    // /user/login, while a login block elsewhere on a post-login page would
+    // match the form alone.
+    if (outcome.onLoginForm && outcome.url.includes('/user/login')) {
+      throw new Error(`the login form came back at ${outcome.url}, so no session was established. The site said: ${outcome.message || '(no message)'}`);
+    }
   }, `Could not log in as "${key}"`);
 });
 
@@ -123,9 +148,66 @@ Then(/^(?:I |we )?am denied access to "([^"]*)"$/, async function (path) {
 });
 
 /**
+ * Set a user's password from the admin account edit form.
+ *
+ * An administrator editing somebody else's account is not asked for a current
+ * password, so the two password fields are all that is needed. Used to repair a
+ * fixture user that already exists with an unknown password.
+ *
+ * @param {object} world      - the cucumber World (this).
+ * @param {string} username   - the account name to look up.
+ * @param {string} password   - the password to set.
+ *
+ * @return {Promise<boolean>} TRUE when the account was found and saved.
+ */
+async function setUserPassword(world, username, password) {
+  const base = world.parameters.launchUrl;
+  await gotoUrl(world.page, `${base}/admin/people?user=${encodeURIComponent(username)}`);
+  await waitForPageLoad(world.page);
+  const href = await world.page.evaluate((username) => {
+    const row = Array.from(document.querySelectorAll('tr')).find(
+      (candidate) => candidate.textContent.includes(username),
+    );
+    if (!row) {
+      return '';
+    }
+    const link = Array.from(row.querySelectorAll('a')).find((candidate) =>
+      /\/user\/\d+\/edit/.test(candidate.getAttribute('href') || ''),
+    );
+    return link ? link.getAttribute('href') : '';
+  }, username);
+  if (!href) {
+    return false;
+  }
+  await gotoUrl(world.page, href.startsWith('http') ? href : `${base}${href}`);
+  await waitForPageLoad(world.page);
+  await world.page.locator('#edit-pass-pass1').fill(password);
+  await world.page.locator('#edit-pass-pass2').fill(password);
+  await world.page.evaluate(() => document.querySelector('#edit-submit').click());
+  await waitForPageLoad(world.page);
+  return true;
+}
+
+/**
  * Provision every non-admin user from worldParameters.users via Drupal's
  * /admin/people/create form. Entries flagged isAdmin: true are skipped.
  * Idempotent. Must be invoked while logged in as the Webmaster.
+ *
+ * "Notify user of new account" is unchecked before the form is filled, and that
+ * is load-bearing on Drupal CMS. Its drupal_cms_authentication recipe ships the
+ * "User registration" ECA model (eca.eca.user_register), which checks that box
+ * by default, hides the password fields behind an #states rule while it is
+ * checked, and on form validate REPLACES the submitted password with a random
+ * 15-character string (Activity_get_random_string -> Activity_set_password) so
+ * the new account is activated from the emailed one-time login link instead.
+ * With the box left checked, the accounts are created and active but with a
+ * password nobody knows, so every later login as one of them fails.
+ *
+ * When the account already exists (from a site provisioned before this step
+ * unchecked the box, or simply a re-run), the create form reports the name as
+ * taken and the password is set from the account edit form instead, so the
+ * step's contract holds either way: the user exists AND has the password
+ * worldParameters.users declares.
  *
  * Example #1: Given I add testing users
  * Example #2: And I add testing users
@@ -136,20 +218,33 @@ Given(/^(?:I |we )?add( the)? testing users$/, async function (theCase) {
     for (const [key, info] of Object.entries(users)) {
       if (info.isAdmin) continue;
       if (key === 'webmaster') continue;
+      const password = info.password;
       await gotoUrl(this.page, `${this.parameters.launchUrl}/admin/people/create`);
-      await this.page.evaluate((info) => {
-        const set = (sel, val) => { const el = document.querySelector(sel); if (el) el.value = val; };
-        set('#edit-name', info.username);
-        set('#edit-mail', info.email || `${info.username}@example.test`);
-        set('#edit-pass-pass1', info.password);
-        set('#edit-pass-pass2', info.password);
-        for (const role of info.roles || []) {
-          const cb = document.querySelector(`input[name="roles[${role}]"]`);
-          if (cb) cb.checked = true;
+      await waitForPageLoad(this.page);
+      // Uncheck first: while it is checked the password fields are invisible,
+      // so they cannot be filled, and the submitted password is discarded.
+      const notify = this.page.locator('#edit-notify');
+      if (await notify.count()) {
+        await notify.uncheck();
+      }
+      await this.page.locator('#edit-name').fill(info.username);
+      await this.page.locator('#edit-mail').fill(info.email || `${info.username}@example.test`);
+      await this.page.locator('#edit-pass-pass1').fill(password);
+      await this.page.locator('#edit-pass-pass2').fill(password);
+      for (const role of info.roles || []) {
+        const checkbox = this.page.locator(`input[name="roles[${role}]"]`);
+        if (await checkbox.count()) {
+          await checkbox.check();
         }
-      }, info);
+      }
       await this.page.evaluate(() => document.querySelector('#edit-submit').click());
       await waitForPageLoad(this.page);
+      const body = await this.page.locator('body').textContent() || '';
+      if (body.includes('is already taken')) {
+        if (!await setUserPassword(this, info.username, password)) {
+          throw new Error(`"${info.username}" already exists but no account edit link was found for it on /admin/people`);
+        }
+      }
     }
   }, 'Could not provision the testing users');
 });
@@ -195,21 +290,146 @@ Then(/^the mode selector should offer the option "([^"]*)"$/, async function (la
 });
 
 /**
- * Assert a JSON response body (rendered as text by the browser) contains the
- * given fragment. Used for the Canvas AI options endpoint, whose JSON the
- * Canvas panel JS fetches to build the dropdown client-side.
+ * Read the current page body as text. The options endpoint answers with
+ * application/json, which the browser renders as the whole body text.
+ *
+ * @param {object} page - the Playwright page.
+ *
+ * @return {Promise<string>} the body text.
+ */
+async function readBodyText(page) {
+  return page.evaluate(() => (document.body ? document.body.innerText : ''));
+}
+
+/**
+ * Read the current page body and decode it as JSON.
+ *
+ * @param {object} page - the Playwright page.
+ *
+ * @return {Promise<object>} the decoded payload.
+ */
+async function readJsonBody(page) {
+  const body = await readBodyText(page);
+  try {
+    return JSON.parse(body);
+  } catch (err) {
+    throw new Error(`Response body is not valid JSON. Body: ${body.slice(0, 300)}`);
+  }
+}
+
+/**
+ * Assert a JSON response body (rendered as text by the browser) contains - or
+ * does not contain - the given fragment. Used for the Canvas AI options
+ * endpoint, whose JSON the Canvas panel JS fetches to build the dropdown
+ * client-side.
  *
  * Example #1: Then the JSON response should contain "All, let the assistant decide"
  * Example #2: And the JSON response should contain "Focus on Child One"
+ * Example #3: Then the JSON response should not contain "Focus on Child One"
+ * Example #4: And the JSON response should not contain "mode:test_focus_one"
  */
-Then(/^the JSON response should contain "([^"]*)"$/, async function (fragment) {
+Then(/^the JSON response should( not)* contain "([^"]*)"$/, async function (negated, fragment) {
   await attempt(async () => {
-    const body = await this.page.evaluate(() => document.body ? document.body.innerText : '');
-    if (!body.includes(fragment)) {
-      throw new Error(`JSON response did not contain "${fragment}". Body: ${body.slice(0, 300)}`);
+    const body = await readBodyText(this.page);
+    if (negated && body.includes(fragment)) {
+      throw new Error(`JSON response still contained "${fragment}". URL: ${this.page.url()}. Body: ${body.slice(0, 300)}`);
     }
-  }, `Expected the JSON response to contain "${fragment}"`);
+    if (!negated && !body.includes(fragment)) {
+      // Include the page URL: a body that looks like a rendered HTML page
+      // (not JSON) usually means this request was denied or redirected
+      // instead of reaching the endpoint, and the URL confirms which.
+      throw new Error(`JSON response did not contain "${fragment}". URL: ${this.page.url()}. Body: ${body.slice(0, 300)}`);
+    }
+  }, `Expected the JSON response${negated ? ' not' : ''} to contain "${fragment}"`);
 });
+
+/**
+ * Assert how many options the mode options endpoint offers for the agent in the
+ * current URL.
+ *
+ * This is the number both client-side surfaces gate their dropdown on: the
+ * Canvas AI panel (js/canvas-ai.js) and the AI Chatbot DeepChat block
+ * (js/chatbot-deepchat.js) each bail out of injecting anything while
+ * `data.options.length <= 1`, so a payload of exactly one option means the
+ * person in the chat is offered no dropdown at all.
+ *
+ * Example #1: Then the options endpoint should offer 1 option
+ * Example #2: Then the options endpoint should offer more than 1 option
+ * Example #3: Then the options endpoint should offer 2 options
+ * Example #4: And the options endpoint should offer more than 2 options
+ * Example #5: And the options endpoint should offer 3 options
+ */
+Then(/^the options endpoint should offer (more than )?(\d+) options?$/, async function (atLeast, expected) {
+  await attempt(async () => {
+    const data = await readJsonBody(this.page);
+    const options = Array.isArray(data.options) ? data.options : [];
+    const labels = options.map((option) => option.label).join(' | ');
+    if (atLeast && options.length <= Number(expected)) {
+      throw new Error(`Expected more than ${expected} option(s), got ${options.length}: ${labels}`);
+    }
+    if (!atLeast && options.length !== Number(expected)) {
+      throw new Error(`Expected ${expected} option(s), got ${options.length}: ${labels}`);
+    }
+  }, `Expected the options endpoint to offer ${atLeast ? 'more than ' : ''}${expected} option(s)`);
+});
+
+/**
+ * Assert the dropdown placement the options endpoint reports.
+ *
+ * The placement configured at /admin/config/ai/agent-modes/settings rides on
+ * this payload (SelectionController::options()), and js/canvas-ai.js places the
+ * control from it: `top` and `below_input` in the panel's light DOM, and
+ * `above_input` / `toolbar` anchored inside the message box.
+ *
+ * Example #1: Then the options endpoint should report the "toolbar" dropdown placement
+ * Example #2: Then the options endpoint should report the "top" dropdown placement
+ * Example #3: And the options endpoint should report the "above_input" dropdown placement
+ */
+Then(/^the options endpoint should report the "([^"]*)" dropdown placement$/, async function (placement) {
+  await attempt(async () => {
+    const data = await readJsonBody(this.page);
+    if (data.position !== placement) {
+      throw new Error(`Expected placement "${placement}", got "${data.position}"`);
+    }
+  }, `Expected the options endpoint to report the "${placement}" dropdown placement`);
+});
+
+/**
+ * Open a named operation link from the row of an admin listing, addressing the
+ * row by a piece of its visible text (a mode label here).
+ *
+ * Drupal renders row operations in a dropbutton whose secondary links (Delete)
+ * stay collapsed until the toggle is pressed, so the link's own href is read
+ * from that row and followed. That keeps the step theme-independent (Claro and
+ * Gin collapse the dropbutton differently) and keeps entity IDs out of the
+ * feature files: the row is found by the label the scenario itself typed.
+ *
+ * Example #1: When I open the "Delete" operation in the "Focus on Child One" row
+ * Example #2: When I open the "Edit" operation in the "Prompt only mode" row
+ * Example #3: And I open the "Delete" operation in the "Generic mode" row
+ */
+When(/^(?:I |we )?open the "([^"]*)" operation in( the)* "([^"]*)" row$/, async function (operation, theCase, rowText) {
+  await attempt(async () => {
+    const href = await this.page.evaluate(([operation, rowText]) => {
+      const rows = Array.from(document.querySelectorAll('tr'));
+      const row = rows.find((candidate) => candidate.textContent.includes(rowText));
+      if (!row) {
+        return '';
+      }
+      const link = Array.from(row.querySelectorAll('a')).find(
+        (candidate) => candidate.textContent.replace(/\s+/g, ' ').trim() === operation,
+      );
+      return link ? link.getAttribute('href') : '';
+    }, [operation, rowText]);
+    if (!href) {
+      throw new Error(`No "${operation}" operation link in the "${rowText}" row`);
+    }
+    const url = href.startsWith('http') ? href : `${this.parameters.launchUrl}${href}`;
+    await gotoUrl(this.page, url);
+    await waitForPageLoad(this.page, this.minWaitTime && this.minWaitTime.page);
+  }, `Could not open the "${operation}" operation in the "${rowText}" row`);
+});
+
 
 /**
  * Resolve a webship-js named selector from the world registry (hydrated from
