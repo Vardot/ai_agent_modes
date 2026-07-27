@@ -199,7 +199,7 @@ Then(/^the mode selector should offer the option "([^"]*)"$/, async function (la
  * given fragment. Used for the Canvas AI options endpoint, whose JSON the
  * Canvas panel JS fetches to build the dropdown client-side.
  *
- * Example #1: Then the JSON response should contain "All — let the assistant decide"
+ * Example #1: Then the JSON response should contain "All, let the assistant decide"
  * Example #2: And the JSON response should contain "Focus on Child One"
  */
 Then(/^the JSON response should contain "([^"]*)"$/, async function (fragment) {

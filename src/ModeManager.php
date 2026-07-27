@@ -130,8 +130,9 @@ class ModeManager implements ModeManagerInterface {
       }
       $parent = $mode->getAgent() !== '' ? $mode->getAgent() : $parent_agent_id;
       $sub_agents = $this->intersectAvailable($parent, $mode->getSubAgents());
-      // A mode may steer through its prompt directive alone — e.g. toward the
-      // orchestrator's own tools (Figma tools) rather than a sub-agent.
+      // A mode may steer through its prompt directive alone, for example
+      // toward the orchestrator's own tools (Figma tools) rather than a
+      // sub-agent.
       if ($sub_agents === [] && trim($mode->getSystemPromptAddition()) === '') {
         return NULL;
       }

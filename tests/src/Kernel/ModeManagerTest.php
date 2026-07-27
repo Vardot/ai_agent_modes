@@ -193,7 +193,7 @@ class ModeManagerTest extends KernelTestBase {
    * from Figma" point at orchestrator-level tools rather than a sub-agent,
    * so they ship with an empty sub_agents list and rely on the directive
    * alone. Regression guard for the 2026-07-20 isRestrictive()/resolve()
-   * change — a mode with neither must still resolve to free-form (NULL).
+   * change: a mode with neither must still resolve to free-form (NULL).
    *
    * @covers ::resolve
    * @covers ::buildScopeDirective

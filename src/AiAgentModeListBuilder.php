@@ -45,7 +45,16 @@ class AiAgentModeListBuilder extends ConfigEntityListBuilder {
     $row['label'] = $entity->label();
     $row['agent'] = $entity->getAgent() !== '' ? $entity->getAgent() : $this->t('Any (generic)');
     $sub_agents = $entity->getSubAgents();
-    $row['sub_agents'] = $sub_agents === [] ? $this->t('None') : implode(', ', $sub_agents);
+    if ($sub_agents !== []) {
+      $row['sub_agents'] = implode(', ', $sub_agents);
+    }
+    else {
+      // A mode can steer through its prompt directive alone, so say so
+      // instead of showing "None" as if the mode did nothing.
+      $row['sub_agents'] = $entity->getSystemPromptAddition() !== ''
+        ? $this->t('Prompt only')
+        : $this->t('None');
+    }
     $row['status'] = $entity->status() ? $this->t('Yes') : $this->t('No');
     return $row + parent::buildRow($entity);
   }

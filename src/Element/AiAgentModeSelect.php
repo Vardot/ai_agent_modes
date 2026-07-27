@@ -11,9 +11,9 @@ use Drupal\Core\Render\Element\Select;
  * Provides a "Mode" select populated from a parent agent's live sub-agents.
  *
  * Value format:
- * - '' — free-form (no scope; the full set of sub-agents).
- * - 'mode:<mode_id>' — a saved curated mode.
- * - 'agent:<sub_agent_id>' — a single ad-hoc sub-agent.
+ * - '': free-form (no scope; the full set of sub-agents).
+ * - 'mode:<mode_id>': a saved curated mode.
+ * - 'agent:<sub_agent_id>': a single ad-hoc sub-agent.
  *
  * Properties:
  * - '#parent_agent': (string) the parent agent plugin ID. Required.

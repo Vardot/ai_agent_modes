@@ -2,7 +2,7 @@
 
 Adds a **Mode** selector in front of any AI agent chat. Selecting a mode
 restricts the orchestrator to a curated subset of its sub-agents, with a tight,
-scoped context — instead of making it enumerate every available sub-agent to
+scoped context, instead of making it enumerate every available sub-agent to
 decide what to do.
 
 ## Why

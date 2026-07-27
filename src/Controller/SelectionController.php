@@ -58,7 +58,7 @@ class SelectionController extends ControllerBase {
     // ("Drupal Canvas Metadata Generation Agent") mean nothing to a person
     // building a page. Developers still see them in the admin UI.
     $options = [
-      ['value' => '', 'label' => (string) $this->t('All — let the assistant decide'), 'group' => ''],
+      ['value' => '', 'label' => (string) $this->t('All, let the assistant decide'), 'group' => ''],
     ];
     foreach ($this->modeManager->listModes($agent) as $mode) {
       $options[] = [
