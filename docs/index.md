@@ -9,6 +9,8 @@ AI Agent Modes puts a **Mode** dropdown in front of an AI agent chat, so the
 person using the assistant can say what kind of job they want done before they
 start typing.
 
+![The Mode dropdown in the Drupal Canvas AI message box toolbar, set to All, let the assistant decide](https://www.drupal.org/files/project-images/a2-2-mode-selector-toolbar.png)
+
 Picking a mode does not take anything away from the assistant. It adds a short
 instruction to the request that names the sub-agents the work should be routed
 to. The assistant keeps every tool it had and is simply pointed in the right
