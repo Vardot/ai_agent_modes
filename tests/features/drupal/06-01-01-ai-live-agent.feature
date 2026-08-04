@@ -13,8 +13,11 @@ Feature: AI Agent Modes with a live chat provider configured
   #
   # Rendering the dropdown never needs a provider (it is a JSON options endpoint
   # plus a Form API render element); this leg proves the same surfaces still
-  # render once a real provider backs the assistant, and is the place to add
+  # answer once a real provider backs the assistant, and is the place to add
   # scenarios that send an actual prompt.
+  #
+  # The options endpoint is what both client-rendered chats read, and the fixture
+  # deliberately places no block, so that endpoint is what is asserted here.
 
   Background:
     Given I am a logged in user with the "Webmaster" user
@@ -24,8 +27,9 @@ Feature: AI Agent Modes with a live chat provider configured
     Then the "drupal page heading" element should be visible
      And I the page should not have PHP errors
 
-  Scenario: The chatbot mode selector renders with a live provider backing the assistant
-    When I navigate to "/admin/content"
-    Then the mode selector should offer the option "Free-form (all sub-agents)"
-     And the mode selector should offer the option "Focus on Child One"
+  Scenario: The mode options are served with a live provider backing the assistant
+    When I navigate to "/ai-agent-modes/options/test_orchestrator?assistant=test_assistant"
+    Then the JSON response should contain "All, let the assistant decide"
+     And the JSON response should contain "Focus on Child One"
+     And the options endpoint should offer more than 1 option
      And I the page should not have PHP errors

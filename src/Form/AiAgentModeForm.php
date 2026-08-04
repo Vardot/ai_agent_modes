@@ -7,6 +7,7 @@ namespace Drupal\ai_agent_modes\Form;
 use Drupal\Core\Entity\EntityForm;
 use Drupal\Core\Entity\EntityTypeManagerInterface;
 use Drupal\Core\Form\FormStateInterface;
+use Drupal\ai_agent_modes\AiAgentModeInterface;
 use Drupal\ai_agent_modes\ModeManagerInterface;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 
@@ -102,13 +103,35 @@ class AiAgentModeForm extends EntityForm {
       '#suffix' => '</div>',
     ];
 
+    $form['scope_strength'] = [
+      '#type' => 'radios',
+      '#title' => $this->t('Scope strength'),
+      '#default_value' => $mode->getScopeStrength(),
+      '#options' => [
+        AiAgentModeInterface::SCOPE_GUIDE => $this->t('Steer only (recommended). Name the sub-agents in the prompt and leave every tool available.'),
+        AiAgentModeInterface::SCOPE_RESTRICT => $this->t('Steer and withhold. Also hide the sub-agent tools this mode does not name, so they are never sent to the model.'),
+      ],
+      '#description' => $this->t('Withholding shrinks what the model has to weigh up, at the cost of the assistant genuinely not being able to reach the other sub-agents. Four things to know before choosing it. Only sub-agent tools are ever withheld: the agent keeps its own tools, and a sub-agent that is kept keeps all of its own. It needs a parent agent and at least one sub-agent ticked above. It narrows the context window rather than granting or denying permission, because each tool still authorises itself when it runs. And if the model calls a withheld sub-agent anyway, which can happen when the mode is changed part-way through a conversation, the current AI provider code raises a PHP error instead of answering gracefully, so choose the mode before starting the conversation.'),
+    ];
+
     $form['system_prompt_addition'] = [
       '#type' => 'textarea',
       '#title' => $this->t('System prompt addition'),
-      '#description' => $this->t('A short scoped directive prepended to the system prompt when this mode is active.'),
+      '#description' => $this->t('A short scoped directive prepended to the system prompt when this mode is active. Drupal tokens are replaced, so text such as [site:name] or [user:display-name] arrives resolved.'),
       '#default_value' => $mode->getSystemPromptAddition(),
       '#rows' => 3,
     ];
+    $assistant_options = $this->assistantOptions();
+    if ($assistant_options !== []) {
+      $form['assistants'] = [
+        '#type' => 'checkboxes',
+        '#title' => $this->t('AI Assistants'),
+        '#description' => $this->t('Optional. Offer this mode only for the selected AI Assistants. Leave every box unchecked to offer it for every assistant. A mode limited to an assistant is not offered where there is no assistant, such as the Drupal Canvas AI panel.'),
+        '#options' => $assistant_options,
+        '#default_value' => $mode->getAssistants(),
+      ];
+    }
+
     $form['surfaces'] = [
       '#type' => 'textarea',
       '#title' => $this->t('Surfaces'),
@@ -142,6 +165,22 @@ class AiAgentModeForm extends EntityForm {
 
   /**
    * {@inheritdoc}
+   */
+  public function validateForm(array &$form, FormStateInterface $form_state): void {
+    parent::validateForm($form, $form_state);
+    if ((string) $form_state->getValue('scope_strength') !== AiAgentModeInterface::SCOPE_RESTRICT) {
+      return;
+    }
+    if ((string) $form_state->getValue('agent') === '') {
+      $form_state->setErrorByName('agent', $this->t('A mode that withholds tools must name its parent agent, because sub-agent IDs only mean something for one agent.'));
+    }
+    if (array_filter((array) $form_state->getValue('sub_agents')) === []) {
+      $form_state->setErrorByName('sub_agents', $this->t('A mode that withholds tools must name at least one sub-agent to keep, or the agent would be left with none.'));
+    }
+  }
+
+  /**
+   * {@inheritdoc}
    *
    * Normalises form values before they are copied onto the entity's typed
    * properties. buildEntity() also runs during validation, so this is the
@@ -154,6 +193,12 @@ class AiAgentModeForm extends EntityForm {
       $form_state->setValue('surfaces', $this->splitLines((string) $surfaces));
     }
     $form_state->setValue('sub_agents', array_values(array_filter((array) $form_state->getValue('sub_agents'))));
+    // The assistants element is only built when there are assistants to offer.
+    // Touch the value only when it was submitted, so a saved restriction is
+    // kept on a site where the AI Assistant API is no longer installed.
+    if (isset($form['assistants'])) {
+      $form_state->setValue('assistants', array_values(array_filter((array) $form_state->getValue('assistants'))));
+    }
     return parent::buildEntity($form, $form_state);
   }
 
@@ -192,6 +237,27 @@ class AiAgentModeForm extends EntityForm {
     $options = [];
     foreach ($this->entityTypeManager->getStorage('ai_agent')->loadMultiple() as $id => $agent) {
       $options[$id] = (string) $agent->label();
+    }
+    asort($options);
+    return $options;
+  }
+
+  /**
+   * Builds the AI Assistant checkbox options.
+   *
+   * Returns nothing when the AI Assistant API is absent or no assistant has
+   * been created, so the field is only shown when it can do something.
+   *
+   * @return array<string, string>
+   *   Options keyed by ai_assistant entity ID.
+   */
+  protected function assistantOptions(): array {
+    if (!$this->entityTypeManager->hasDefinition('ai_assistant')) {
+      return [];
+    }
+    $options = [];
+    foreach ($this->entityTypeManager->getStorage('ai_assistant')->loadMultiple() as $id => $assistant) {
+      $options[$id] = (string) $assistant->label();
     }
     asort($options);
     return $options;

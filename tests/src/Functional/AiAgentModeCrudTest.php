@@ -112,6 +112,75 @@ class AiAgentModeCrudTest extends BrowserTestBase {
   }
 
   /**
+   * The scope strength field defaults to steering and validates itself.
+   */
+  public function testScopeStrengthFieldAndValidation(): void {
+    $admin = $this->drupalCreateUser(['administer ai agent modes']);
+    $this->drupalLogin($admin);
+
+    $this->drupalGet('admin/config/ai/agent-modes/add');
+    $this->assertSession()->pageTextContains('Scope strength');
+    $this->assertSession()->fieldValueEquals('scope_strength', 'guide');
+    // The honest limits are on the form, not only in the documentation.
+    $this->assertSession()->pageTextContains('Only sub-agent tools are ever withheld');
+    // Token support is stated where the text is written.
+    $this->assertSession()->pageTextContains('Drupal tokens are replaced');
+
+    // Withholding without a parent agent is refused.
+    $this->submitForm([
+      'label' => 'Bad strict mode',
+      'id' => 'bad_strict_mode',
+      'agent' => '',
+      'scope_strength' => 'restrict',
+    ], 'Save');
+    $this->assertSession()->pageTextContains('A mode that withholds tools must name its parent agent');
+    $this->assertNull($this->container->get('entity_type.manager')
+      ->getStorage('ai_agent_mode')
+      ->load('bad_strict_mode'));
+
+    // Withholding with no sub-agent named is refused too.
+    $this->drupalGet('admin/config/ai/agent-modes/add');
+    $this->submitForm([
+      'label' => 'Strict without subset',
+      'id' => 'strict_without_subset',
+      'agent' => $this->parentId,
+      'scope_strength' => 'restrict',
+    ], 'Save');
+    $this->assertSession()->pageTextContains('must name at least one sub-agent');
+
+    // A complete withholding mode saves, and the listing says so.
+    $this->drupalGet('admin/config/ai/agent-modes/add');
+    $this->submitForm([
+      'label' => 'Only Child One, strictly',
+      'id' => 'strict_child_one',
+      'agent' => $this->parentId,
+      'sub_agents[child_one]' => TRUE,
+      'scope_strength' => 'restrict',
+    ], 'Save');
+    $this->assertSession()->pageTextContains('The AI agent mode Only Child One, strictly has been saved.');
+    $this->assertSession()->pageTextContains('Steer and withhold');
+
+    $mode = $this->container->get('entity_type.manager')
+      ->getStorage('ai_agent_mode')
+      ->load('strict_child_one');
+    $this->assertSame('restrict', $mode->getScopeStrength());
+    $this->assertTrue($mode->withholdsTools());
+  }
+
+  /**
+   * The settings form carries the site-wide enforcement switch.
+   */
+  public function testToolScopeEnforcementSetting(): void {
+    $admin = $this->drupalCreateUser(['administer ai agent modes']);
+    $this->drupalLogin($admin);
+
+    $this->drupalGet('admin/config/ai/agent-modes/settings');
+    $this->assertSession()->checkboxChecked('tool_scope_enforcement');
+    $this->submitForm(['tool_scope_enforcement' => FALSE], 'Save configuration');
+    $this->assertFalse($this->config('ai_agent_modes.settings')->get('tool_scope_enforcement'));
+  }
+
+  /**
    * The selector block renders a dropdown built from the live sub-agents.
    */
   public function testSelectorBlockDropdown(): void {

@@ -103,6 +103,10 @@ class AiAgentModeSelectorBlock extends BlockBase implements ContainerFactoryPlug
       AiAgentModeSelectorForm::class,
       $agent,
       $this->configuration['surface'],
+      '',
+      // Pass the configured assistant on, so modes limited to selected
+      // assistants are offered when the block is pointed at one of them.
+      (string) $this->configuration['ai_assistant'],
     );
   }
 

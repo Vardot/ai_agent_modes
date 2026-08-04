@@ -5,10 +5,14 @@ services:
       - '@entity_type.manager'
       - '@plugin.manager.ai_agents'
       - '@plugin.manager.ai.function_calls'
-      - '@module_handler'
-      - '@extension.list.module'
+      - '@config.factory'
       - '@logger.channel.ai_agent_modes'
   Drupal\ai_agent_modes\ModeManagerInterface: '@ai_agent_modes.manager'
+
+  # Request-scoped: which AI Assistant an agent run belongs to. Written by the
+  # assistant subscriber, read by the agent subscriber.
+  ai_agent_modes.assistant_context:
+    class: Drupal\ai_agent_modes\ActiveAssistantContext
 
   ai_agent_modes.selection_store:
     class: Drupal\ai_agent_modes\SelectionStore
@@ -22,6 +26,21 @@ services:
     arguments:
       - '@ai_agent_modes.manager'
       - '@ai_agent_modes.selection_store'
+      - '@ai_agent_modes.assistant_context'
+      - '@logger.channel.ai_agent_modes'
+    tags:
+      - { name: event_subscriber }
+
+  # Soft integration with the AI Assistant API: '@?' leaves the runner NULL when
+  # that module is absent, and the subscriber subscribes by literal event name so
+  # the container still compiles without it.
+  ai_agent_modes.assistant_scope_subscriber:
+    class: Drupal\ai_agent_modes\EventSubscriber\AssistantScopeSubscriber
+    arguments:
+      - '@?ai_assistant_api.runner'
+      - '@ai_agent_modes.manager'
+      - '@ai_agent_modes.selection_store'
+      - '@ai_agent_modes.assistant_context'
       - '@logger.channel.ai_agent_modes'
     tags:
       - { name: event_subscriber }

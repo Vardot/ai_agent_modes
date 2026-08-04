@@ -14,9 +14,15 @@ install:
   - ai_assistant_api
   - ai_chatbot
   - ai_agent_modes
-# The parent agent, its two sub-agents, the AI Assistant, one saved mode and the
-# selector block (in the Gin admin content region) are created from this
-# recipe's own config/ directory when the recipe is applied.
+# The parent agent, its two sub-agents, the AI Assistant and two saved modes (one
+# that steers only, one that also withholds) are created from this recipe's own
+# config/ directory when the recipe is applied.
+#
+# No block is placed. An earlier version of this fixture placed the "AI Agent Mode
+# selector" block in the Gin admin content region, which put a Mode dropdown on
+# every admin page of any site the fixture was applied to. The suite now asserts
+# through the JSON options endpoint every client-rendered chat reads, which is
+# both closer to what the surfaces actually do and harmless to the host site.
 #
 # canvas_ai is intentionally NOT installed here: it pulls the heavy drupal/canvas
 # project, and the Canvas AI panel integration is proven through its client-side

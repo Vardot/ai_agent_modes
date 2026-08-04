@@ -23,13 +23,23 @@ context so the model behaves reliably.
 
 - A **mode** is an `ai_agent_mode` config entity: a saved subset of one agent's
   sub-agents (shippable in config, recipes and other modules).
+- A mode can be limited to **selected AI Assistants**, so two assistants sharing
+  one parent agent each offer the modes that belong to their job. Naming no
+  assistant, the default, offers the mode everywhere.
 - The selector dropdown is populated **dynamically** from the parent agent's
   live sub-agents (read through the AI Agents plugin manager), plus any saved
   modes. The default option is free-form (the full set).
-- When a mode is active, an event subscriber on `ai_agents.request` only adds
-  guiding text: it prepends a short directive to the system prompt naming the
-  sub-agent(s) the orchestrator should route the work to. Tools are left
-  untouched, so the orchestrator keeps full capability and is simply steered.
+- When a mode is active, an event subscriber prepends a short directive to the
+  agent's system prompt naming the sub-agent(s) the work should be routed to. It
+  hooks `ai_agents.pre_system_prompt`, so the agent still replaces tokens
+  afterwards and a mode's own text may contain them.
+- Steering leaves every tool in place, which is the default. A mode can also be
+  set to **withhold**: the sub-agent tools it does not name are then dropped from
+  the request through the agent's own function override, so the model never sees
+  them. Only sub-agent tools are ever withheld, and a site-wide switch turns the
+  behaviour off without editing any mode.
+- An AI Assistant with no agent behind it is steered through the AI Assistant
+  API's own system-prompt event, so it can use the generic modes too.
 - The selection persists per conversation (private tempstore).
 
 ## Surfaces

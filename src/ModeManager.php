@@ -4,9 +4,8 @@ declare(strict_types=1);
 
 namespace Drupal\ai_agent_modes;
 
+use Drupal\Core\Config\ConfigFactoryInterface;
 use Drupal\Core\Entity\EntityTypeManagerInterface;
-use Drupal\Core\Extension\ModuleExtensionList;
-use Drupal\Core\Extension\ModuleHandlerInterface;
 use Drupal\Core\Logger\LoggerChannelInterface;
 use Drupal\ai\OperationType\Chat\ChatInput;
 use Drupal\ai\Service\FunctionCalling\FunctionCallPluginManager;
@@ -31,10 +30,8 @@ class ModeManager implements ModeManagerInterface {
    *   The AI agents plugin manager.
    * @param \Drupal\ai\Service\FunctionCalling\FunctionCallPluginManager $functionCallManager
    *   The function call plugin manager.
-   * @param \Drupal\Core\Extension\ModuleHandlerInterface $moduleHandler
-   *   The module handler.
-   * @param \Drupal\Core\Extension\ModuleExtensionList $moduleExtensionList
-   *   The module extension list, used to locate prompt files.
+   * @param \Drupal\Core\Config\ConfigFactoryInterface $configFactory
+   *   The config factory, read for the tool-scope enforcement switch.
    * @param \Drupal\Core\Logger\LoggerChannelInterface $logger
    *   The logger channel.
    */
@@ -42,8 +39,7 @@ class ModeManager implements ModeManagerInterface {
     protected EntityTypeManagerInterface $entityTypeManager,
     protected AiAgentManager $agentManager,
     protected FunctionCallPluginManager $functionCallManager,
-    protected ModuleHandlerInterface $moduleHandler,
-    protected ModuleExtensionList $moduleExtensionList,
+    protected ConfigFactoryInterface $configFactory,
     protected LoggerChannelInterface $logger,
   ) {}
 
@@ -93,7 +89,7 @@ class ModeManager implements ModeManagerInterface {
   /**
    * {@inheritdoc}
    */
-  public function listModes(?string $parent_agent_id = NULL, ?string $surface = NULL): array {
+  public function listModes(?string $parent_agent_id = NULL, ?string $surface = NULL, ?string $assistant_id = NULL): array {
     $storage = $this->entityTypeManager->getStorage('ai_agent_mode');
     /** @var \Drupal\ai_agent_modes\AiAgentModeInterface[] $modes */
     $modes = $storage->loadByProperties(['status' => TRUE]);
@@ -105,6 +101,11 @@ class ModeManager implements ModeManagerInterface {
         continue;
       }
       if ($surface !== NULL && !$mode->appliesToSurface($surface)) {
+        continue;
+      }
+      // A mode limited to selected AI Assistants is only offered for those
+      // assistants, so it is skipped when the surface has none.
+      if (!$mode->appliesToAssistant($assistant_id)) {
         continue;
       }
       $matches[$mode->id()] = $mode;
@@ -136,11 +137,26 @@ class ModeManager implements ModeManagerInterface {
       if ($sub_agents === [] && trim($mode->getSystemPromptAddition()) === '') {
         return NULL;
       }
+      // A generic mode names sub-agent IDs that mean nothing for whichever
+      // agent is running, so withholding on those names would hide every one
+      // of that agent's sub-agents. Such a mode steers only.
+      $strength = AiAgentModeInterface::SCOPE_GUIDE;
+      if ($mode->withholdsTools()) {
+        if ($mode->getAgent() !== '') {
+          $strength = AiAgentModeInterface::SCOPE_RESTRICT;
+        }
+        else {
+          $this->logger->warning('Mode "@label" is set to withhold tools but names no parent agent, so it steers only.', [
+            '@label' => (string) $mode->label(),
+          ]);
+        }
+      }
       return new ScopePayload(
         $parent,
         $sub_agents,
         $mode->getSystemPromptAddition(),
         (string) $mode->label(),
+        $strength,
       );
     }
 
@@ -150,23 +166,114 @@ class ModeManager implements ModeManagerInterface {
       return NULL;
     }
 
-    return new ScopePayload($parent_agent_id, $sub_agents);
+    // An ad-hoc pick made in a chat never withholds anything: only a saved mode
+    // an administrator wrote can do that.
+    return new ScopePayload(
+      $parent_agent_id,
+      $sub_agents,
+      '',
+      '',
+      AiAgentModeInterface::SCOPE_GUIDE,
+    );
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function applyScopeToPrompt(ScopePayload $payload, string $system_prompt): string {
+    $directive = $this->buildScopeDirective($payload);
+    return $directive === '' ? $system_prompt : trim($directive . "\n\n" . $system_prompt);
   }
 
   /**
    * {@inheritdoc}
    */
   public function applyScope(ScopePayload $payload, ChatInput $input): bool {
-    $directive = $this->buildScopeDirective($payload);
-    if ($directive === '') {
-      return FALSE;
-    }
     // Only add guiding text: prepend the directive to the system prompt so the
     // orchestrator routes the work to the selected sub-agent(s). Tools are left
-    // untouched.
-    $existing = $input->getSystemPrompt() ?? '';
-    $input->setSystemPrompt(trim($directive . "\n\n" . $existing));
+    // untouched here.
+    $existing = $input->getSystemPrompt();
+    $new = $this->applyScopeToPrompt($payload, $existing);
+    if ($new === $existing) {
+      return FALSE;
+    }
+    $input->setSystemPrompt($new);
     return TRUE;
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function restrictedTools(ScopePayload $payload, array $entity_tools): array {
+    // Emergency switch: a site can turn every withholding mode back into a
+    // steering one without editing any mode. Absent means enabled, so an
+    // upgraded site that never got the new setting still gets the feature.
+    if ($payload->scopeStrength !== AiAgentModeInterface::SCOPE_RESTRICT) {
+      return [];
+    }
+    $enforce = $this->configFactory->get('ai_agent_modes.settings')->get('tool_scope_enforcement');
+    if ($enforce !== NULL && !$enforce) {
+      // Say so: without this line an administrator reading the log cannot tell
+      // whether the switch or the mode itself was the reason nothing was
+      // withheld.
+      $this->logger->info('Mode "@label" would withhold sub-agent tools, but tool scope enforcement is switched off site-wide, so it steers only.', [
+        '@label' => $payload->label !== '' ? $payload->label : $payload->parentAgent,
+      ]);
+      return [];
+    }
+    if ($payload->subAgents === []) {
+      $this->logger->warning('Mode "@label" is set to withhold tools but resolved to no available sub-agent, so it steers only.', [
+        '@label' => $payload->label !== '' ? $payload->label : $payload->parentAgent,
+      ]);
+      return [];
+    }
+
+    $definitions = $this->functionCallDefinitions();
+    $map = [];
+    $withheld = 0;
+    foreach ($entity_tools as $tool_id => $enabled) {
+      // Never re-enable a tool the agent has switched off, and never touch a
+      // tool that is not a sub-agent tool: the orchestrator's own tools stay
+      // exactly as configured.
+      if (empty($enabled) || !is_string($tool_id) || !$this->isAgentToolId($tool_id, $definitions)) {
+        $map[$tool_id] = $enabled;
+        continue;
+      }
+      $sub_agent_id = $this->agentIdFromToolId($tool_id, $definitions);
+      if ($sub_agent_id !== '' && !in_array($sub_agent_id, $payload->subAgents, TRUE)) {
+        $map[$tool_id] = FALSE;
+        $withheld++;
+        continue;
+      }
+      $map[$tool_id] = $enabled;
+    }
+
+    if ($withheld === 0) {
+      // The mode names everything the agent has, so there is nothing to do and
+      // no reason to own the agent's override.
+      return [];
+    }
+    if (array_filter($map) === []) {
+      $this->logger->warning('Mode "@label" would withhold every tool from agent @agent, so it steers only.', [
+        '@label' => $payload->label !== '' ? $payload->label : $payload->parentAgent,
+        '@agent' => $payload->parentAgent,
+      ]);
+      return [];
+    }
+
+    return $map;
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function hasAnyMode(): bool {
+    $count = $this->entityTypeManager->getStorage('ai_agent_mode')->getQuery()
+      ->accessCheck(FALSE)
+      ->range(0, 1)
+      ->count()
+      ->execute();
+    return (int) $count > 0;
   }
 
   /**
@@ -179,11 +286,11 @@ class ModeManager implements ModeManagerInterface {
     $lines = [];
     if ($payload->subAgents !== []) {
       $labels = implode(', ', $payload->subAgents);
-      $lines[] = 'MODE (AI Agent Modes): For this request, use the following sub-agent(s): ' . $labels . '.';
+      $lines[] = self::DIRECTIVE_MARKER . ' For this request, use the following sub-agent(s): ' . $labels . '.';
       $lines[] = 'Route the task to them and prefer them over other sub-agents for this conversation.';
     }
     else {
-      $lines[] = 'MODE (AI Agent Modes): Follow this working mode for the conversation.';
+      $lines[] = self::DIRECTIVE_MARKER . ' Follow this working mode for the conversation.';
     }
     if ($payload->systemPromptAddition !== '') {
       $lines[] = trim($payload->systemPromptAddition);

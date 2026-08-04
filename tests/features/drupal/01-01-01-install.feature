@@ -26,7 +26,8 @@ Feature: AI Agent Modes installs cleanly on Drupal CMS
   Scenario: The AI Agent Modes settings form is reachable
     When I navigate to "/admin/config/ai/agent-modes/settings"
     Then the "drupal page heading" element should contain text "AI Agent Modes settings"
-     And I should see "Where should the dropdown appear?"
+     And I should see "Where should the dropdown appear in the Drupal Canvas AI panel?"
+     And I should see "Where should the dropdown appear in the AI Chatbot panel?"
      And I the page should not have PHP errors
 
   Scenario: The status report loads with no PHP errors

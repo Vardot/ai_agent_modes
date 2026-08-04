@@ -36,3 +36,11 @@ Feature: Creating an AI agent mode through the admin UI
      And I should see "test_orchestrator"
      And I should see "test_child_two"
      And I the page should not have PHP errors
+    # Delete what this scenario created, so the suite can run twice against the
+    # same site. Without this the second run fails on a duplicate machine name,
+    # which only shows up locally: CI builds a fresh site every time.
+    When I navigate to "/admin/config/ai/agent-modes"
+     And I open the "Delete" operation in the "Focus on Child Two" row
+     And I press "Delete"
+    Then I should see "The AI agent mode Focus on Child Two has been deleted."
+

@@ -35,7 +35,7 @@ class SettingsForm extends ConfigFormBase {
   public function buildForm(array $form, FormStateInterface $form_state): array {
     $form['canvas_position'] = [
       '#type' => 'radios',
-      '#title' => $this->t('Where should the dropdown appear?'),
+      '#title' => $this->t('Where should the dropdown appear in the Drupal Canvas AI panel?'),
       '#default_value' => $this->config('ai_agent_modes.settings')->get('canvas_position') ?: 'toolbar',
       '#options' => [
         'top' => $this->optionLabel('top', $this->t('Top of the panel')),
@@ -45,6 +45,29 @@ class SettingsForm extends ConfigFormBase {
       ],
       '#description' => $this->t('Applies to everyone using the assistant.'),
     ];
+
+    $form['chatbot_position'] = [
+      '#type' => 'radios',
+      '#title' => $this->t('Where should the dropdown appear in the AI Chatbot panel?'),
+      '#default_value' => $this->config('ai_agent_modes.settings')->get('chatbot_position') ?: 'above_chat',
+      '#options' => [
+        'above_chat' => $this->t('Above the chat, under the panel header'),
+        'below_input' => $this->t('Under the message box'),
+        'header' => $this->t('In the panel header, beside the assistant name'),
+      ],
+      '#description' => $this->t('The AI Chatbot panel is a separate surface from the Drupal Canvas AI panel, so it has its own placement. Applies to everyone using the chatbot.'),
+    ];
+
+    $enforcement = $this->config('ai_agent_modes.settings')->get('tool_scope_enforcement');
+    $form['tool_scope_enforcement'] = [
+      '#type' => 'checkbox',
+      '#title' => $this->t('Enforce tool scope'),
+      // An absent value counts as enabled, matching how the mode manager reads
+      // it, so a site upgraded before this setting existed keeps the behaviour.
+      '#default_value' => $enforcement === NULL ? TRUE : (bool) $enforcement,
+      '#description' => $this->t('When this is off, every mode set to <em>Steer and withhold</em> behaves as <em>Steer only</em>: the assistant is still pointed at the right sub-agents, but nothing is withheld from it. Switch it off to rule the withholding out as the cause of a problem, without editing any mode.'),
+    ];
+
     return parent::buildForm($form, $form_state);
   }
 
@@ -89,6 +112,8 @@ class SettingsForm extends ConfigFormBase {
   public function submitForm(array &$form, FormStateInterface $form_state): void {
     $this->config('ai_agent_modes.settings')
       ->set('canvas_position', $form_state->getValue('canvas_position'))
+      ->set('chatbot_position', $form_state->getValue('chatbot_position'))
+      ->set('tool_scope_enforcement', (bool) $form_state->getValue('tool_scope_enforcement'))
       ->save();
     parent::submitForm($form, $form_state);
   }

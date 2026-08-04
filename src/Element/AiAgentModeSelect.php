@@ -18,6 +18,9 @@ use Drupal\Core\Render\Element\Select;
  * Properties:
  * - '#parent_agent': (string) the parent agent plugin ID. Required.
  * - '#surface': (string) an optional surface ID used to filter saved modes.
+ * - '#assistant': (string) the ai_assistant entity ID this chat is backed by,
+ *   when there is one. Modes limited to selected assistants are only offered
+ *   for the assistant named here.
  *
  * Usage example:
  * @code
@@ -38,6 +41,7 @@ class AiAgentModeSelect extends Select {
     $info = parent::getInfo();
     $info['#parent_agent'] = '';
     $info['#surface'] = '';
+    $info['#assistant'] = '';
     $info['#title'] = $this->t('Mode');
     array_unshift($info['#process'], [static::class, 'processAgentModeOptions']);
     return $info;
@@ -55,21 +59,27 @@ class AiAgentModeSelect extends Select {
   public static function processAgentModeOptions(array &$element): array {
     $parent_agent = (string) ($element['#parent_agent'] ?? '');
     $surface = ($element['#surface'] ?? '') !== '' ? (string) $element['#surface'] : NULL;
+    $assistant = ($element['#assistant'] ?? '') !== '' ? (string) $element['#assistant'] : NULL;
 
     $options = ['' => (string) t('Free-form (all sub-agents)')];
 
+    /** @var \Drupal\ai_agent_modes\ModeManagerInterface $manager */
+    $manager = \Drupal::service('ai_agent_modes.manager');
+
+    // An empty parent agent is meaningful rather than a reason to skip: it
+    // returns the generic modes, which is exactly what an AI Assistant with no
+    // agent behind it can be offered.
+    $mode_options = [];
+    foreach ($manager->listModes($parent_agent, $surface, $assistant) as $mode) {
+      $mode_options['mode:' . $mode->id()] = (string) $mode->label();
+    }
+    if ($mode_options !== []) {
+      $options[(string) t('Modes')] = $mode_options;
+    }
+
+    // Picking a single sub-agent ad hoc only means something when there is an
+    // agent to read them from.
     if ($parent_agent !== '') {
-      /** @var \Drupal\ai_agent_modes\ModeManagerInterface $manager */
-      $manager = \Drupal::service('ai_agent_modes.manager');
-
-      $mode_options = [];
-      foreach ($manager->listModes($parent_agent, $surface) as $mode) {
-        $mode_options['mode:' . $mode->id()] = (string) $mode->label();
-      }
-      if ($mode_options !== []) {
-        $options[(string) t('Modes')] = $mode_options;
-      }
-
       $agent_options = [];
       foreach ($manager->listSubAgents($parent_agent) as $id => $info) {
         $agent_options['agent:' . $id] = $info['label'];

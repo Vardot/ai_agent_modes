@@ -17,7 +17,7 @@ canvas_ai:
     - core/once
 
 chatbot_deepchat:
-  version: 1.0.8
+  version: 1.0.10
   js:
     js/chatbot-deepchat.js: {}
   dependencies:

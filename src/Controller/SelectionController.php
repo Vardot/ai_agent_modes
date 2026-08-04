@@ -45,13 +45,22 @@ class SelectionController extends ControllerBase {
    * Used by chat surfaces that render the dropdown client-side (e.g. the
    * Drupal Canvas AI panel, whose input lives in a web-component shadow DOM).
    *
+   * An `assistant` query parameter names the AI Assistant the surface is
+   * backed by, when there is one. Modes limited to selected assistants are
+   * offered for the named assistant only, and are left out when the parameter
+   * is absent (as it is for the Drupal Canvas AI panel, which is driven by an
+   * agent rather than by an assistant).
+   *
    * @param string $agent
    *   The parent agent plugin ID.
+   * @param \Symfony\Component\HttpFoundation\Request $request
+   *   The request.
    *
    * @return \Symfony\Component\HttpFoundation\JsonResponse
    *   The options and the currently active value.
    */
-  public function options(string $agent): JsonResponse {
+  public function options(string $agent, Request $request): JsonResponse {
+    $assistant = (string) $request->query->get('assistant', '');
     // This list is read by site builders and clients in the chat, so it speaks
     // in tasks, not in agent machinery. The raw sub-agents are deliberately
     // NOT offered here: they duplicate what the modes cover, and their names
@@ -60,7 +69,7 @@ class SelectionController extends ControllerBase {
     $options = [
       ['value' => '', 'label' => (string) $this->t('All, let the assistant decide'), 'group' => ''],
     ];
-    foreach ($this->modeManager->listModes($agent) as $mode) {
+    foreach ($this->modeManager->listModes($agent, NULL, $assistant !== '' ? $assistant : NULL) as $mode) {
       $options[] = [
         'value' => 'mode:' . $mode->id(),
         'label' => (string) $mode->label(),
@@ -81,6 +90,7 @@ class SelectionController extends ControllerBase {
 
     return new JsonResponse([
       'agent' => $agent,
+      'assistant' => $assistant,
       'value' => $value,
       'options' => $options,
       // Where the Canvas AI panel should place the dropdown - riding on this

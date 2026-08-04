@@ -23,12 +23,18 @@ final class ScopePayload {
    *   The scoped directive to prepend to the system prompt.
    * @param string $label
    *   A human-readable label for the active scope (mode label or ad-hoc).
+   * @param string $scopeStrength
+   *   Either AiAgentModeInterface::SCOPE_GUIDE, the default, which steers with
+   *   the directive alone, or SCOPE_RESTRICT, which also withholds the
+   *   sub-agent tools the scope does not name. New parameters must be appended
+   *   here: this class is final and is constructed positionally.
    */
   public function __construct(
     public readonly string $parentAgent,
     public readonly array $subAgents,
     public readonly string $systemPromptAddition = '',
     public readonly string $label = '',
+    public readonly string $scopeStrength = AiAgentModeInterface::SCOPE_GUIDE,
   ) {}
 
   /**

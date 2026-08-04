@@ -53,6 +53,8 @@ use Drupal\ai_agent_modes\Form\AiAgentModeForm;
     'agent',
     'sub_agents',
     'system_prompt_addition',
+    'scope_strength',
+    'assistants',
     'surfaces',
   ],
 )]
@@ -96,11 +98,55 @@ class AiAgentMode extends ConfigEntityBase implements AiAgentModeInterface {
   protected string $system_prompt_addition = '';
 
   /**
+   * How strongly this mode scopes the agent.
+   */
+  protected string $scope_strength = AiAgentModeInterface::SCOPE_GUIDE;
+
+  /**
+   * The AI Assistant IDs this mode is limited to.
+   *
+   * @var string[]
+   */
+  protected array $assistants = [];
+
+  /**
    * The surfaces this mode applies to.
    *
    * @var string[]
    */
   protected array $surfaces = [];
+
+  /**
+   * {@inheritdoc}
+   *
+   * Only the parent agent becomes a dependency. A mode is a subset of one
+   * agent, so it is meaningless once that agent is gone, and Drupal removing it
+   * with the agent is the right outcome.
+   *
+   * The sub-agents and the assistants a mode names are deliberately NOT
+   * dependencies. The module already tolerates their absence at run time: an
+   * unavailable sub-agent name is dropped when the scope is resolved, and an
+   * assistant that no longer exists simply never matches. Making them hard
+   * dependencies would delete a whole mode because one unrelated sub-agent was
+   * removed, which loses an administrator's work for no benefit.
+   */
+  public function calculateDependencies() {
+    parent::calculateDependencies();
+
+    if ($this->agent === '') {
+      return $this;
+    }
+    $definition = \Drupal::entityTypeManager()->getDefinition('ai_agent', FALSE);
+    if ($definition === NULL) {
+      return $this;
+    }
+    $agent = \Drupal::entityTypeManager()->getStorage('ai_agent')->load($this->agent);
+    if ($agent !== NULL) {
+      $this->addDependency('config', $agent->getConfigDependencyName());
+    }
+
+    return $this;
+  }
 
   /**
    * {@inheritdoc}
@@ -128,6 +174,45 @@ class AiAgentMode extends ConfigEntityBase implements AiAgentModeInterface {
    */
   public function getSystemPromptAddition(): string {
     return $this->system_prompt_addition;
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function getScopeStrength(): string {
+    // An unknown stored value reads as the safe default rather than throwing,
+    // so hand-edited config can never make an agent lose its tools.
+    return $this->scope_strength === AiAgentModeInterface::SCOPE_RESTRICT
+      ? AiAgentModeInterface::SCOPE_RESTRICT
+      : AiAgentModeInterface::SCOPE_GUIDE;
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function withholdsTools(): bool {
+    return $this->getScopeStrength() === AiAgentModeInterface::SCOPE_RESTRICT;
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function getAssistants(): array {
+    return array_values(array_filter($this->assistants));
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function appliesToAssistant(?string $assistant_id): bool {
+    $assistants = $this->getAssistants();
+    if ($assistants === []) {
+      return TRUE;
+    }
+    // A mode that names assistants belongs to them: it is withheld where there
+    // is no assistant at all (e.g. the Drupal Canvas AI panel, which is driven
+    // by an agent rather than by an assistant).
+    return $assistant_id !== NULL && $assistant_id !== '' && in_array($assistant_id, $assistants, TRUE);
   }
 
   /**

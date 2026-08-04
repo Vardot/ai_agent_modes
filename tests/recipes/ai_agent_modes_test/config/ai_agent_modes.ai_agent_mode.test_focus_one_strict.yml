@@ -1,0 +1,14 @@
+langcode: en
+status: true
+dependencies: {  }
+id: test_focus_one_strict
+label: 'Only Child One, withhold the rest'
+description: 'A seeded mode that withholds the sub-agent tools it does not name, used by the AI Agent Modes suite to prove the Scope column and the withholding validation.'
+weight: 1
+agent: test_orchestrator
+sub_agents:
+  - test_child_one
+system_prompt_addition: 'Use Test Child One only.'
+scope_strength: restrict
+assistants: {  }
+surfaces: {  }

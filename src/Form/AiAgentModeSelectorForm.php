@@ -47,7 +47,7 @@ class AiAgentModeSelectorForm extends FormBase {
   /**
    * {@inheritdoc}
    */
-  public function buildForm(array $form, FormStateInterface $form_state, string $agent = '', string $surface = '', string $conversation = ''): array {
+  public function buildForm(array $form, FormStateInterface $form_state, string $agent = '', string $surface = '', string $conversation = '', string $assistant = ''): array {
     if ($agent === '') {
       return [
         '#markup' => $this->t('No parent agent configured for the mode selector.'),
@@ -72,6 +72,7 @@ class AiAgentModeSelectorForm extends FormBase {
       '#type' => 'ai_agent_mode_select',
       '#parent_agent' => $agent,
       '#surface' => $surface,
+      '#assistant' => $assistant,
       '#default_value' => $default,
     ];
     $form['actions'] = [

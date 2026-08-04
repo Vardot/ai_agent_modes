@@ -33,6 +33,8 @@ class AiAgentModeListBuilder extends ConfigEntityListBuilder {
     $header['label'] = $this->t('Mode');
     $header['agent'] = $this->t('Parent agent');
     $header['sub_agents'] = $this->t('Sub-agents');
+    $header['scope'] = $this->t('Scope');
+    $header['assistants'] = $this->t('AI Assistants');
     $header['status'] = $this->t('Enabled');
     return $header + parent::buildHeader();
   }
@@ -55,6 +57,13 @@ class AiAgentModeListBuilder extends ConfigEntityListBuilder {
         ? $this->t('Prompt only')
         : $this->t('None');
     }
+    $row['scope'] = $entity->withholdsTools()
+      ? $this->t('Steer and withhold')
+      : $this->t('Steer only');
+    $assistants = $entity->getAssistants();
+    $row['assistants'] = $assistants !== []
+      ? implode(', ', $assistants)
+      : $this->t('Any assistant');
     $row['status'] = $entity->status() ? $this->t('Yes') : $this->t('No');
     return $row + parent::buildRow($entity);
   }

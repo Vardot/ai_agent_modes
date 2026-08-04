@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace Drupal\Tests\ai_agent_modes\Unit\Hook;
 
 use Drupal\Core\Block\BlockPluginInterface;
+use Drupal\Core\Config\Config;
+use Drupal\Core\Config\ConfigFactoryInterface;
 use Drupal\Core\Entity\EntityStorageInterface;
 use Drupal\Core\Entity\EntityTypeManagerInterface;
 use Drupal\Core\Extension\ModuleHandlerInterface;
@@ -35,6 +37,8 @@ class ChatbotHooksTest extends UnitTestCase {
     ?string $agent_id,
     array $modes,
     array $sub_agents,
+    string $position = 'above_chat',
+    string $assistant_override = '',
   ): ChatbotHooks {
     $moduleHandler = $this->createMock(ModuleHandlerInterface::class);
     $moduleHandler->method('moduleExists')
@@ -45,18 +49,27 @@ class ChatbotHooksTest extends UnitTestCase {
     if ($ai_assistant_api_exists) {
       $assistant = NULL;
       if ($agent_id !== NULL) {
-        $assistant = new class($agent_id) {
+        $assistant = new class($agent_id, $assistant_override) {
 
           /**
            * Constructs the stub assistant.
            */
-          public function __construct(protected string $agentId) {}
+          public function __construct(protected string $agentId, protected string $override) {}
 
           /**
            * Stubs AiAssistantInterface::get().
            */
           public function get(string $key) {
             return $key === 'ai_agent' ? $this->agentId : NULL;
+          }
+
+          /**
+           * Stubs the config entity's third-party settings.
+           */
+          public function getThirdPartySetting(string $module, string $key, $default = NULL) {
+            return $module === 'ai_agent_modes' && $key === 'chatbot_position' && $this->override !== ''
+              ? $this->override
+              : $default;
           }
 
         };
@@ -70,7 +83,12 @@ class ChatbotHooksTest extends UnitTestCase {
     $modeManager->method('listModes')->willReturn($modes);
     $modeManager->method('listSubAgents')->willReturn($sub_agents);
 
-    return new ChatbotHooks($moduleHandler, $entityTypeManager, $modeManager);
+    $config = $this->createMock(Config::class);
+    $config->method('get')->with('chatbot_position')->willReturn($position);
+    $configFactory = $this->createMock(ConfigFactoryInterface::class);
+    $configFactory->method('get')->with('ai_agent_modes.settings')->willReturn($config);
+
+    return new ChatbotHooks($moduleHandler, $entityTypeManager, $modeManager, $configFactory);
   }
 
   /**
@@ -178,11 +196,76 @@ class ChatbotHooksTest extends UnitTestCase {
     $hooks->blockViewAlter($build, $block);
 
     $this->assertContains('ai_agent_modes/chatbot_deepchat', $build['#attached']['library']);
+    // The assistant travels to the script alongside the agent, so the options
+    // endpoint can offer the modes limited to this assistant, and so does the
+    // placement the site chose for the chatbot panel.
     $this->assertSame(
-      ['agent' => 'drupal_cms_assistant'],
+      [
+        'agent' => 'drupal_cms_assistant',
+        'assistant' => 'the_assistant',
+        'position' => 'above_chat',
+      ],
       $build['#attached']['drupalSettings']['aiAgentModesChatbot'],
     );
+    $this->assertContains('config:ai_agent_modes.settings', $build['#cache']['tags']);
     $this->assertContains('user', $build['#cache']['contexts']);
+  }
+
+  /**
+   * The configured chatbot placement is what the script is told to use.
+   *
+   * @covers ::blockViewAlter
+   */
+  public function testConfiguredPositionIsPassedThrough(): void {
+    $hooks = $this->buildHooks(TRUE, 'drupal_cms_assistant', [], ['child_one' => []], 'header');
+    $block = $this->createMock(BlockPluginInterface::class);
+    $block->method('getConfiguration')->willReturn(['ai_assistant' => 'the_assistant']);
+
+    $build = [];
+    $hooks->blockViewAlter($build, $block);
+
+    $this->assertSame(
+      'header',
+      $build['#attached']['drupalSettings']['aiAgentModesChatbot']['position'],
+    );
+  }
+
+  /**
+   * An assistant's own placement beats the site setting.
+   *
+   * @covers ::blockViewAlter
+   */
+  public function testAssistantOverrideBeatsTheSiteSetting(): void {
+    $hooks = $this->buildHooks(TRUE, 'drupal_cms_assistant', [], ['child_one' => []], 'above_chat', 'header');
+    $block = $this->createMock(BlockPluginInterface::class);
+    $block->method('getConfiguration')->willReturn(['ai_assistant' => 'the_assistant']);
+
+    $build = [];
+    $hooks->blockViewAlter($build, $block);
+
+    $this->assertSame(
+      'header',
+      $build['#attached']['drupalSettings']['aiAgentModesChatbot']['position'],
+    );
+  }
+
+  /**
+   * An unknown stored override falls back to the site setting.
+   *
+   * @covers ::blockViewAlter
+   */
+  public function testUnknownAssistantOverrideFallsBack(): void {
+    $hooks = $this->buildHooks(TRUE, 'drupal_cms_assistant', [], ['child_one' => []], 'below_input', 'nonsense');
+    $block = $this->createMock(BlockPluginInterface::class);
+    $block->method('getConfiguration')->willReturn(['ai_assistant' => 'the_assistant']);
+
+    $build = [];
+    $hooks->blockViewAlter($build, $block);
+
+    $this->assertSame(
+      'below_input',
+      $build['#attached']['drupalSettings']['aiAgentModesChatbot']['position'],
+    );
   }
 
 }

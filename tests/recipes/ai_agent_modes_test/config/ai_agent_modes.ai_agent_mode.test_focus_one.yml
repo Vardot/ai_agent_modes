@@ -9,4 +9,6 @@ agent: test_orchestrator
 sub_agents:
   - test_child_one
 system_prompt_addition: 'Focus only on Test Child One for this request.'
+scope_strength: guide
+assistants: {  }
 surfaces: {  }

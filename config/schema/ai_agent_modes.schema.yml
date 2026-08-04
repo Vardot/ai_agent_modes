@@ -35,6 +35,21 @@ ai_agent_modes.ai_agent_mode.*:
       type: text
       label: 'System prompt addition'
       description: 'A short scoped directive prepended to the system prompt for this mode.'
+    scope_strength:
+      type: string
+      label: 'Scope strength'
+      description: 'guide steers with the prompt only. restrict also withholds the sub-agent tools this mode does not name. Honoured only for a mode with a parent agent and at least one sub-agent, and only on the ai_agents pipeline.'
+      constraints:
+        Choice:
+          - guide
+          - restrict
+    assistants:
+      type: sequence
+      label: 'AI Assistants'
+      description: 'The AI Assistants this mode is offered for. Empty means every assistant, and a mode that names assistants is not offered where there is no assistant.'
+      sequence:
+        type: string
+        label: 'AI Assistant ID'
     surfaces:
       type: sequence
       label: 'Surfaces'
@@ -47,6 +62,19 @@ ai_agent_modes.settings:
   type: config_object
   label: 'AI Agent Modes settings'
   mapping:
+    tool_scope_enforcement:
+      type: boolean
+      label: 'Enforce tool scope'
+      description: 'When off, every mode set to restrict behaves as steer-only. An emergency switch that needs no mode edits.'
+    chatbot_position:
+      type: string
+      label: 'AI Chatbot dropdown position'
+      description: 'Where the mode dropdown sits in the AI Chatbot panel. above_chat puts it under the panel header and above the conversation, below_input under the message box, header inside the panel header row.'
+      constraints:
+        Choice:
+          - above_chat
+          - below_input
+          - header
     canvas_position:
       type: string
       label: 'Canvas AI dropdown position'
@@ -73,3 +101,19 @@ block.settings.ai_agent_mode_selector:
       type: string
       label: 'Surface'
       description: 'Optional surface ID used to filter which modes are shown.'
+
+# One AI Assistant may override where its mode dropdown sits, which is stored on
+# the assistant's own entity so it travels with that assistant's configuration.
+ai_assistant_api.ai_assistant.*.third_party.ai_agent_modes:
+  type: mapping
+  label: 'AI Agent Modes settings for this assistant'
+  mapping:
+    chatbot_position:
+      type: string
+      label: 'Mode dropdown position'
+      description: 'Overrides ai_agent_modes.settings:chatbot_position for this assistant. Absent means the site setting applies.'
+      constraints:
+        Choice:
+          - above_chat
+          - below_input
+          - header

@@ -26,20 +26,41 @@ Feature: Choosing where the mode dropdown sits in the assistant panel
   Background:
     Given I am a logged in user with the "Webmaster" user
 
-  Scenario Outline: The "<label>" setting is what the panel is told to use
+  # The radios are chosen by element ID, not by label: the settings form now has
+  # a second placement question for the AI Chatbot panel whose options carry some
+  # of the same words, so a label match would be ambiguous.
+  Scenario Outline: The "<label>" setting is what the Canvas panel is told to use
     When I navigate to "/admin/config/ai/agent-modes/settings"
-     And I select radio button "<label>"
+     And I select radio button "#edit-canvas-position-<id>"
      And I save the form
     Then I should see "The configuration options have been saved."
     When I navigate to "/admin/config/ai/agent-modes/settings"
-    Then the radio button with value "<placement>" should be selected
+    Then the radio button "#edit-canvas-position-<id>" should be selected
     When I navigate to "/ai-agent-modes/options/test_orchestrator"
     Then the options endpoint should report the "<placement>" dropdown placement
      And I the page should not have PHP errors
 
-    Examples: The four placements offered by the settings form
-      | label                     | placement    |
-      | Top of the panel          | top          |
-      | Above the message box     | above_input  |
-      | Under the message box     | below_input  |
-      | In the toolbar (compact)  | toolbar      |
+    Examples: The four placements the Drupal Canvas AI panel offers
+      | label                     | id           | placement    |
+      | Top of the panel          | top          | top          |
+      | Above the message box     | above-input  | above_input  |
+      | Under the message box     | below-input  | below_input  |
+      | In the toolbar (compact)  | toolbar      | toolbar      |
+
+  # The AI Chatbot panel has its own placement question, whose value never
+  # reaches the options endpoint (the chatbot script is handed it directly), so
+  # this row is asserted on the form alone.
+  Scenario Outline: The AI Chatbot panel keeps the "<label>" placement it was given
+    When I navigate to "/admin/config/ai/agent-modes/settings"
+     And I select radio button "#edit-chatbot-position-<id>"
+     And I save the form
+    Then I should see "The configuration options have been saved."
+    When I navigate to "/admin/config/ai/agent-modes/settings"
+    Then the radio button "#edit-chatbot-position-<id>" should be selected
+     And I the page should not have PHP errors
+
+    Examples: The three placements the AI Chatbot panel offers
+      | label                                        | id           |
+      | Under the message box                        | below-input  |
+      | In the panel header, beside the assistant     | header       |
+      | Above the chat, under the panel header        | above-chat   |

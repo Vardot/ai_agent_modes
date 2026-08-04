@@ -18,9 +18,15 @@ The first option is always the default:
 Below it are the modes your site offers, in the order an administrator gave
 them.
 
-Choosing a mode does not remove any of the assistant's abilities. It adds a
-short line to the request telling the assistant which of its sub-agents to route
+Choosing a mode usually does not remove any of the assistant's abilities. It adds
+a short line to the request telling the assistant which of its sub-agents to route
 the work to, so it spends less effort deciding and stays closer to the task.
+
+An administrator can also mark a mode as one that withholds. In that mode the
+assistant genuinely cannot reach the sub-agents the mode leaves out, so it may
+answer that it cannot do something it could do in another mode. That is the mode
+working, not a fault: switch to another mode, or to **All, let the assistant
+decide**.
 
 ## Where to find it
 
@@ -30,7 +36,9 @@ message box, or tucked into the message box toolbar next to the send button. The
 toolbar placement is the default. An administrator sets this once for the whole
 site, so it is in the same place for everyone.
 
-In the **AI Assistant chatbot** the dropdown is added just above the chat.
+In the **AI Assistant chatbot** the dropdown sits where the site put it: above the
+chat under the panel header, under the message box, or in the panel header beside
+the assistant name. An administrator chooses that once for the whole site.
 
 Elsewhere on the site an administrator can place the **AI Agent Mode selector**
 block next to any AI chat. In the block version you choose a mode and then press
@@ -77,6 +85,10 @@ The dropdown hides itself when there is nothing to choose. Both the Canvas AI
 panel and the chatbot leave it out entirely when the only option would be
 "All, let the assistant decide", which happens when the site has no modes saved
 for that assistant yet.
+
+Two assistants on the same site can also offer different lists on purpose: a mode
+can be limited to selected assistants, so a mode a colleague sees in one chat is
+not always offered in another.
 
 In the toolbar placement there is one more thing to know: the compact control
 only appears while the send button is visible, and the send button stays hidden

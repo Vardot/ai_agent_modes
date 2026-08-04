@@ -5,3 +5,13 @@
 # toolbar: compact control inside the message box toolbar, between the
 # upload and send buttons (shown while the send button is visible).
 canvas_position: toolbar
+
+# Where the mode dropdown sits in the AI Chatbot (DeepChat) panel.
+# above_chat: under the panel header, above the conversation.
+# below_input: its own row under the message box.
+# header: inside the panel header row, beside the assistant name.
+chatbot_position: above_chat
+
+# Site-wide switch for the withholding half of a mode's scope. When off, every
+# mode set to "Steer and withhold" behaves as "Steer only", with no mode edits.
+tool_scope_enforcement: true
