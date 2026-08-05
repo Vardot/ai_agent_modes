@@ -39,6 +39,7 @@ class ChatbotHooksTest extends UnitTestCase {
     array $sub_agents,
     string $position = 'above_chat',
     string $assistant_override = '',
+    bool $dropdown_enabled = TRUE,
   ): ChatbotHooks {
     $moduleHandler = $this->createMock(ModuleHandlerInterface::class);
     $moduleHandler->method('moduleExists')
@@ -82,6 +83,8 @@ class ChatbotHooksTest extends UnitTestCase {
     $modeManager = $this->createMock(ModeManagerInterface::class);
     $modeManager->method('listModes')->willReturn($modes);
     $modeManager->method('listSubAgents')->willReturn($sub_agents);
+    // The site switch is asked before any dropdown work is done.
+    $modeManager->method('dropdownEnabled')->willReturn($dropdown_enabled);
 
     $config = $this->createMock(Config::class);
     $config->method('get')->with('chatbot_position')->willReturn($position);
@@ -266,6 +269,26 @@ class ChatbotHooksTest extends UnitTestCase {
       'below_input',
       $build['#attached']['drupalSettings']['aiAgentModesChatbot']['position'],
     );
+  }
+
+  /**
+   * With the dropdown switched off, nothing is attached to either surface.
+   *
+   * @covers ::libraryInfoAlter
+   * @covers ::blockViewAlter
+   */
+  public function testNothingHappensWhenTheDropdownIsOff(): void {
+    $hooks = $this->buildHooks(TRUE, 'test_agent', ['mode' => 'Mode'], [], 'above_chat', '', FALSE);
+
+    $libraries = ['deepchat' => ['dependencies' => []]];
+    $hooks->libraryInfoAlter($libraries, 'ai_chatbot');
+    $this->assertSame([], $libraries['deepchat']['dependencies']);
+
+    $block = $this->createMock(BlockPluginInterface::class);
+    $block->method('getConfiguration')->willReturn(['ai_assistant' => 'the_assistant']);
+    $build = [];
+    $hooks->blockViewAlter($build, $block);
+    $this->assertArrayNotHasKey('#attached', $build);
   }
 
 }

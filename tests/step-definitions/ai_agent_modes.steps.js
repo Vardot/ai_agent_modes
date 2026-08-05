@@ -507,3 +507,89 @@ When(/^(?:I |we )?save the form$/, async function () {
     await waitForPageLoad(this.page, this.minWaitTime && this.minWaitTime.page);
   }, 'Could not save the form');
 });
+
+/**
+ * Open one vertical tab on the AI Agent Modes settings form, and wait for it.
+ *
+ * The settings form groups its questions as vertical tabs, so a field is in the
+ * page but not visible until its own tab is open. Clicking the tab link alone is
+ * a race: the click reports success while the pane is still closed, and every
+ * field in it then times out because nothing can be typed into it. Drupal's own
+ * fragment handling
+ * is no help either, because core focuses the pane by looking at the *parents* of
+ * the fragment target, and a details element is the pane rather than a child of
+ * one.
+ *
+ * So this clicks the tab and then waits for the pane to actually be visible,
+ * failing with something a person can act on if it never opens.
+ *
+ * Example #1: When I open the "Microphone (speech to text)" settings tab
+ * Example #2: And I open the "Mode dropdown" settings tab
+ */
+When(/^(?:I |we )?open the "([^"]*)" settings tab$/, async function (title) {
+  const page = this.page;
+  await attempt(async () => {
+    const opened = await page.evaluate((label) => {
+      const link = [...document.querySelectorAll('.vertical-tabs__menu a, .vertical-tabs__menu-item a')]
+        .find((a) => a.textContent.replace(/\s+/g, ' ').trim().startsWith(label));
+      if (!link) {
+        return false;
+      }
+      link.click();
+      return true;
+    }, title);
+    if (!opened) {
+      throw new Error(`No settings tab named "${title}"`);
+    }
+    // The pane is the details element the tab belongs to: wait until it is the
+    // one on show, rather than trusting the click.
+    await page.waitForFunction((label) => {
+      const item = [...document.querySelectorAll('.vertical-tabs__menu-item')]
+        .find((li) => li.textContent.replace(/\s+/g, ' ').trim().startsWith(label));
+      if (!item) {
+        return false;
+      }
+      const link = item.querySelector('a');
+      const pane = link && document.querySelector(link.getAttribute('href'));
+      return !!(item.className.includes('selected') && pane && pane.offsetParent);
+    }, title, { timeout: 10000, polling: 100 });
+  }, `Could not open the "${title}" settings tab`);
+});
+
+/**
+ * Open a collapsible details on the current form, by its summary text.
+ *
+ * Some settings live inside a details that ships closed, and a field inside a
+ * closed details is in the page but cannot be typed into or clicked, so a fill or
+ * a check on it simply times out. This opens the details and waits for it, which keeps the
+ * scenario about the setting rather than about the widget.
+ *
+ * Example #1: When I open the "Voice commands" details
+ * Example #2: And I open the "Advanced" details
+ */
+When(/^(?:I |we )?open the "([^"]*)" details$/, async function (title) {
+  const page = this.page;
+  await attempt(async () => {
+    const found = await page.evaluate((label) => {
+      const details = [...document.querySelectorAll('details')].find((d) => {
+        const summary = d.querySelector('summary');
+        return summary && summary.textContent.replace(/\s+/g, ' ').trim().startsWith(label);
+      });
+      if (!details) {
+        return false;
+      }
+      details.open = true;
+      return true;
+    }, title);
+    if (!found) {
+      throw new Error(`No details named "${title}"`);
+    }
+    await page.waitForFunction((label) => {
+      const details = [...document.querySelectorAll('details')].find((d) => {
+        const summary = d.querySelector('summary');
+        return summary && summary.textContent.replace(/\s+/g, ' ').trim().startsWith(label);
+      });
+      return !!(details && details.open && details.querySelector('input, select, textarea'));
+    }, title, { timeout: 10000, polling: 100 });
+  }, `Could not open the "${title}" details`);
+});

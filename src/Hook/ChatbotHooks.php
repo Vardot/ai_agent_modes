@@ -74,6 +74,9 @@ class ChatbotHooks implements ContainerInjectionInterface {
     if ($extension !== 'ai_chatbot' || !isset($libraries['deepchat'])) {
       return;
     }
+    if (!$this->modeManager->dropdownEnabled()) {
+      return;
+    }
     $libraries['deepchat']['dependencies'][] = 'ai_agent_modes/chatbot_deepchat';
   }
 
@@ -86,6 +89,9 @@ class ChatbotHooks implements ContainerInjectionInterface {
    */
   #[Hook('block_view_ai_deepchat_block_alter')]
   public function blockViewAlter(array &$build, BlockPluginInterface $block): void {
+    if (!$this->modeManager->dropdownEnabled()) {
+      return;
+    }
     if (!$this->moduleHandler->moduleExists('ai_assistant_api')) {
       return;
     }

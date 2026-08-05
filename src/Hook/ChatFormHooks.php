@@ -67,6 +67,9 @@ class ChatFormHooks implements ContainerInjectionInterface {
    */
   #[Hook('form_ai_foundation_chat_alter')]
   public function chatFormAlter(array &$form, FormStateInterface $form_state, string $form_id): void {
+    if (!$this->modeManager->dropdownEnabled()) {
+      return;
+    }
     if ($this->assistantRunner === NULL || !method_exists($this->assistantRunner, 'getAssistant')) {
       return;
     }

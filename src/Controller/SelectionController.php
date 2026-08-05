@@ -60,6 +60,11 @@ class SelectionController extends ControllerBase {
    *   The options and the currently active value.
    */
   public function options(string $agent, Request $request): JsonResponse {
+    if (!$this->modeManager->dropdownEnabled()) {
+      // Nothing to choose from while the dropdown is switched off, so anything
+      // still asking is told exactly that rather than being given a list.
+      return new JsonResponse(['value' => '', 'options' => [], 'position' => '']);
+    }
     $assistant = (string) $request->query->get('assistant', '');
     // This list is read by site builders and clients in the chat, so it speaks
     // in tasks, not in agent machinery. The raw sub-agents are deliberately

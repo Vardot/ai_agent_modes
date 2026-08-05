@@ -267,6 +267,14 @@ class ModeManager implements ModeManagerInterface {
   /**
    * {@inheritdoc}
    */
+  public function dropdownEnabled(): bool {
+    $enabled = $this->configFactory->get('ai_agent_modes.settings')->get('show_dropdown');
+    return $enabled === NULL ? TRUE : (bool) $enabled;
+  }
+
+  /**
+   * {@inheritdoc}
+   */
   public function hasAnyMode(): bool {
     $count = $this->entityTypeManager->getStorage('ai_agent_mode')->getQuery()
       ->accessCheck(FALSE)

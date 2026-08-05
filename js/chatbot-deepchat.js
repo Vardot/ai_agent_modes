@@ -112,8 +112,18 @@
    *   TRUE when it was placed, FALSE while the anchor is still missing.
    */
   const place = (container, wrapper, position) => {
-    const header = container.querySelector('.ai-deepchat--header');
-    const chat = container.querySelector('.chat-element');
+    // The AI Chatbot block draws itself from one of two templates, and they do
+    // not agree on either anchor: the panel templates carry
+    // .ai-deepchat--header around a .chat-element, while the toolbar template
+    // carries .sidebar-header and puts <deep-chat> straight in the container
+    // with no .chat-element at all. Looking for the panel names only meant the
+    // dropdown silently never appeared on a toolbar-placed block.
+    const header = container.querySelector(
+      '.ai-deepchat--header, .sidebar-header',
+    );
+    const chat =
+      container.querySelector('.chat-element') ||
+      container.querySelector('deep-chat');
 
     if (position === 'header') {
       if (!header) {
@@ -123,18 +133,23 @@
       header.appendChild(wrapper);
       return true;
     }
-    if (position === 'below_input') {
-      if (!chat) {
-        return false;
-      }
-      container.insertBefore(wrapper, chat.nextSibling);
-      return true;
-    }
-    // above_chat, the default: between the header and the conversation.
     if (!chat) {
       return false;
     }
-    container.insertBefore(wrapper, chat);
+    // Insert against the chat's own parent rather than the container: the
+    // toolbar template nests <deep-chat> deeper than .ai-deepchat, and
+    // container.insertBefore() only accepts a direct child as the reference.
+    // Passing a non-child threw, which is why the dropdown never arrived there.
+    const parent = chat.parentElement;
+    if (!parent) {
+      return false;
+    }
+    if (position === 'below_input') {
+      parent.insertBefore(wrapper, chat.nextSibling);
+      return true;
+    }
+    // above_chat, the default: between the header and the conversation.
+    parent.insertBefore(wrapper, chat);
     return true;
   };
 

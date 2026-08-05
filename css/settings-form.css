@@ -1,0 +1,177 @@
+/**
+ * @file
+ * Turns the placement radios on the settings form into selectable cards.
+ *
+ * Each placement already carries a small diagram of where the control will sit,
+ * so the diagram and its label are the thing worth clicking: the radio circle
+ * beside them says nothing the highlighted card does not. This follows how Gin
+ * presents its own choices, and it keeps working without JavaScript, because the
+ * radio is still the input, only visually replaced by the card around it.
+ *
+ * The cards are stacked one under another rather than side by side: every option
+ * is a diagram plus a sentence, and stacking lines the diagrams up so they can be
+ * compared down the page.
+ *
+ * The radio is moved off-screen rather than hidden with display or visibility, so
+ * it stays focusable and screen readers still announce the group.
+ */
+
+.ai-agent-modes-cards {
+  --ai-agent-modes-card-border: var(--gin-border-color, #d4d4d8);
+  --ai-agent-modes-card-accent: var(--gin-color-primary, #003ecc);
+  --ai-agent-modes-card-surface: var(--gin-bg-layer, #fff);
+  --ai-agent-modes-card-hover: var(--gin-bg-layer2, #f7f8fa);
+  --ai-agent-modes-card-selected: var(--gin-bg-app, #f0f4ff);
+
+  max-width: 36rem;
+}
+
+.ai-agent-modes-cards .form-item {
+  margin-top: 0;
+  margin-bottom: 0;
+}
+
+/* The question keeps its distance from the cards under it. */
+.ai-agent-modes-cards > legend,
+.ai-agent-modes-cards > label {
+  margin-bottom: 6px;
+}
+
+.ai-agent-modes-cards .form-radios,
+.ai-agent-modes-cards > div {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-block: 8px 4px;
+}
+
+.ai-agent-modes-cards .form-type--radio,
+.ai-agent-modes-cards .form-item--radio,
+.ai-agent-modes-cards .js-form-type-radio {
+  position: relative;
+  margin: 0;
+  padding: 0;
+  transition:
+    border-color 0.15s ease,
+    box-shadow 0.15s ease,
+    background-color 0.15s ease;
+  border: 1px solid var(--ai-agent-modes-card-border);
+  border-radius: 10px;
+  background-color: var(--ai-agent-modes-card-surface);
+}
+
+.ai-agent-modes-cards .form-type--radio:hover,
+.ai-agent-modes-cards .form-item--radio:hover,
+.ai-agent-modes-cards .js-form-type-radio:hover {
+  border-color: var(--ai-agent-modes-card-accent);
+  background-color: var(--ai-agent-modes-card-hover);
+}
+
+/* The input still exists and is still focusable, it is simply not drawn. */
+/* The input is not drawn, but it fills the card and sits above the label, so the
+   whole card is the control: a pointer anywhere on it lands on the radio itself.
+   Do not go back to clipping this to a pixel. A clipped input is invisible to a
+   pointer, so the card still worked by its label while every automated check on
+   the input timed out, which is exactly how this broke once already. */
+.ai-agent-modes-cards input[type="radio"] {
+  position: absolute;
+  z-index: 2;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  cursor: pointer;
+  opacity: 0;
+  border: 0;
+  appearance: none;
+}
+
+.ai-agent-modes-cards .form-type--radio > label,
+.ai-agent-modes-cards .form-item--radio > label,
+.ai-agent-modes-cards .js-form-type-radio > label {
+  display: grid;
+  /* Diagram, then the sentence, then room for the tick on the selected card, so
+     every row lines up whichever option is chosen. */
+  grid-template-columns: auto 1fr 1.25rem;
+  align-items: center;
+  gap: 16px;
+  min-height: 5rem;
+  /* Generous top and bottom, so the diagram sits in the middle of the card with
+     clear space above and below it rather than filling the card edge to edge. */
+  padding: 24px 20px;
+  cursor: pointer;
+  font-weight: normal;
+  line-height: 1.35;
+}
+
+/* The diagram sits in its own tile, so it reads as a picture of the panel rather
+   than as loose artwork beside the text. */
+.ai-agent-modes-cards > div label svg,
+.ai-agent-modes-cards label svg {
+  flex: 0 0 auto;
+  margin: 0;
+  padding: 6px;
+  border: 1px solid var(--ai-agent-modes-card-border);
+  border-radius: 6px;
+  background-color: var(--gin-bg-app, #fafbfc);
+}
+
+/* The tick, drawn only on the selected card. */
+.ai-agent-modes-cards .form-type--radio > label::after,
+.ai-agent-modes-cards .form-item--radio > label::after,
+.ai-agent-modes-cards .js-form-type-radio > label::after {
+  width: 1.25rem;
+  height: 1.25rem;
+  content: "";
+  border: 1px solid var(--ai-agent-modes-card-border);
+  border-radius: 50%;
+  background-color: var(--ai-agent-modes-card-surface);
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: 0.7rem;
+}
+
+.ai-agent-modes-cards .form-type--radio:has(input:checked),
+.ai-agent-modes-cards .form-item--radio:has(input:checked),
+.ai-agent-modes-cards .js-form-type-radio:has(input:checked) {
+  border-color: var(--ai-agent-modes-card-accent);
+  background-color: var(--ai-agent-modes-card-selected);
+  box-shadow: inset 0 0 0 1px var(--ai-agent-modes-card-accent);
+}
+
+.ai-agent-modes-cards .form-type--radio:has(input:checked) label,
+.ai-agent-modes-cards .form-item--radio:has(input:checked) label,
+.ai-agent-modes-cards .js-form-type-radio:has(input:checked) label {
+  font-weight: bold;
+}
+
+.ai-agent-modes-cards .form-type--radio:has(input:checked) label::after,
+.ai-agent-modes-cards .form-item--radio:has(input:checked) label::after,
+.ai-agent-modes-cards .js-form-type-radio:has(input:checked) label::after {
+  border-color: var(--ai-agent-modes-card-accent);
+  background-color: var(--ai-agent-modes-card-accent);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none' stroke='%23fff' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M3 8.5l3.5 3.5L13 5'/%3E%3C/svg%3E");
+}
+
+.ai-agent-modes-cards .form-type--radio:has(input:checked) label svg,
+.ai-agent-modes-cards .form-item--radio:has(input:checked) label svg,
+.ai-agent-modes-cards .js-form-type-radio:has(input:checked) label svg {
+  border-color: var(--ai-agent-modes-card-accent);
+}
+
+/* Keyboard focus has to stay visible once the circle is gone. */
+.ai-agent-modes-cards .form-type--radio:has(input:focus-visible),
+.ai-agent-modes-cards .form-item--radio:has(input:focus-visible),
+.ai-agent-modes-cards .js-form-type-radio:has(input:focus-visible) {
+  outline: 2px solid var(--gin-color-focus, var(--ai-agent-modes-card-accent));
+  outline-offset: 2px;
+}
+
+@media (forced-colors: active) {
+  .ai-agent-modes-cards .form-type--radio:has(input:checked),
+  .ai-agent-modes-cards .form-item--radio:has(input:checked),
+  .ai-agent-modes-cards .js-form-type-radio:has(input:checked) {
+    border-width: 3px;
+  }
+}

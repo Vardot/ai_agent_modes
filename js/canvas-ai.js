@@ -172,7 +172,9 @@
     // Only show the compact control while the send button is visible
     // (deep-chat hides/collapses it until there is something to send), and
     // fit it to the live button geometry: the same gap on both sides as the
-    // upload-to-control gap, vertically in line with the buttons.
+    // upload-to-control gap, vertically in line with the buttons. Dictation
+    // does not depend on that button being on screen: speech.js presses it
+    // either way and falls back to Enter.
     const GAP = 8;
     // Declared before the closure that references it, so the interval can be
     // cleared from inside its own callback once the wrapper is detached.

@@ -1,3 +1,8 @@
+# Whether the mode dropdown is offered at all. Off leaves every mode in place
+# and simply stops offering the choice in the chat, which suits a site that
+# scopes its assistant by configuration rather than by asking the person.
+show_dropdown: true
+
 # Where the mode dropdown sits in the Drupal Canvas AI panel.
 # top: full-width row at the top of the panel, above the chat.
 # above_input: its own row directly above the message box.
@@ -6,7 +11,9 @@
 # upload and send buttons (shown while the send button is visible).
 canvas_position: toolbar
 
-# Where the mode dropdown sits in the AI Chatbot (DeepChat) panel.
+# Where the mode dropdown sits in the AI Chatbot (DeepChat) panel. The settings
+# form asks about the Drupal Canvas AI panel only, so this is the site default
+# that an AI Assistant falls back to when it sets no placement of its own.
 # above_chat: under the panel header, above the conversation.
 # below_input: its own row under the message box.
 # header: inside the panel header row, beside the assistant name.
@@ -15,3 +22,73 @@ chatbot_position: above_chat
 # Site-wide switch for the withholding half of a mode's scope. When off, every
 # mode set to "Steer and withhold" behaves as "Steer only", with no mode edits.
 tool_scope_enforcement: true
+
+# Speech to text: deep-chat's microphone, transcribed by the browser's own Web
+# Speech support, so nothing is sent to a service of ours and no key is needed.
+# The browser may still recognise in the cloud (Chrome and Edge do), so this is
+# off by default: dictation is a choice a site makes, with its own privacy
+# consequences, and a browser without Web Speech shows the button as unsupported.
+#
+# These mirror deep-chat's own speechToText options
+# (https://deepchat.dev/docs/speech#speechToText). Azure is deliberately not
+# offered here, because it needs a subscription key or token, which does not
+# belong in configuration: add it from your own code with
+# hook_ai_agent_modes_speech_alter() instead.
+speech_to_text:
+  enabled: false
+  # Where the button sits. start and end follow the writing direction.
+  # input_end: inside the message box, at the end of its bottom row, one gap
+  # before the send button. input_start: the start of that row, which is the
+  # default. outside_end and outside_start: deep-chat's own row, after or before
+  # the message box.
+  position: input_start
+  # browser: let the browser choose. site: follow the page language, which is
+  # what a multilingual site usually wants. Otherwise a BCP 47 tag (en-US, en-GB).
+  language: browser
+  # Show words as they are being recognised, before they are final.
+  display_interim_results: true
+  # Stop recording once the message is sent. deep-chat's own default.
+  stop_after_submit: true
+  # Send the message after a pause in speaking, rather than only filling the box.
+  # On by default: someone dictating is usually not holding the mouse, so waiting
+  # for them to press send defeats the point of dictating in the first place.
+  submit_after_silence: true
+  # How long that pause is, in milliseconds. Three seconds, which leaves room to
+  # draw breath mid-sentence without the message being sent half-finished.
+  submit_after_silence_ms: 4000
+  # Colours for the transcribed text. Empty leaves deep-chat's own colours.
+  interim_color: ''
+  final_color: ''
+  # Spoken phrases that drive the chat instead of being typed into it. Empty
+  # means the phrase is not listened for.
+  commands:
+    stop: ''
+    pause: ''
+    resume: ''
+    remove_all_text: ''
+    submit: ''
+    command_mode: ''
+    # Whether a phrase is recognised inside a longer sentence, and whether case
+    # has to match. deep-chat's own defaults.
+    substrings: true
+    case_sensitive: false
+  # Words the recogniser hears wrongly, one "spoken|written" pair per line, so a
+  # name or a product it does not know can be corrected on the way in.
+  translations: ''
+
+# Text to speech: read each reply aloud with the browser's own speech synthesis
+# (https://deepchat.dev/docs/speech#textToSpeech). Also off by default, and it
+# needs the window to be focused, which is the browser's rule, not ours.
+text_to_speech:
+  enabled: false
+  # browser, site, or a BCP 47 tag, as above.
+  language: browser
+  # The voice to read with. The names differ by operating system, so a name that
+  # is not installed falls back to the default voice.
+  voice_name: ''
+  # 0 to 2, where 1 is the voice's own pitch.
+  pitch: 1.0
+  # 0.1 to 10, where 1 is the voice's own speed.
+  rate: 1.0
+  # 0 to 1.
+  volume: 1.0

@@ -33,11 +33,14 @@ variables:
   OPT_IN_TEST_NEXT_MINOR: 1
   OPT_IN_TEST_NEXT_MAJOR: 1
   OPT_IN_TEST_MAX_PHP: 1
-  # The module ships no CSS, so the template Stylelint job has nothing to lint.
-  SKIP_STYLELINT: 1
 
 # Blocking quality gates.
 phpcs:
+  allow_failure: false
+
+# The module ships CSS for the settings form, so this lints it rather than being
+# skipped as it was when there was none.
+stylelint:
   allow_failure: false
 
 phpstan:
@@ -81,6 +84,17 @@ cspell:
   stage: test
   needs: []
   allow_failure: false
+  # The lane installs Chromium and its system libraries before it can run a
+  # single scenario, and a slow apt mirror has already eaten the whole default
+  # 30 minutes once, killing the job before any test ran. More time, plus one
+  # retry for exactly that class of failure: a real test failure still fails at
+  # once, because it is neither a timeout nor a runner fault.
+  timeout: 50m
+  retry:
+    max: 1
+    when:
+      - job_execution_timeout
+      - runner_system_failure
   services:
     - name: $_CONFIG_DOCKERHUB_ROOT/$_TARGET_DB_TYPE-$_TARGET_DB_VERSION:$_TARGET_DB_IMAGE_TAG
       alias: database

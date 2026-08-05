@@ -12,6 +12,7 @@ use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Plugin\ContainerFactoryPluginInterface;
 use Drupal\Core\StringTranslation\TranslatableMarkup;
 use Drupal\ai_agent_modes\Form\AiAgentModeSelectorForm;
+use Drupal\ai_agent_modes\ModeManagerInterface;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 
 /**
@@ -39,12 +40,18 @@ class AiAgentModeSelectorBlock extends BlockBase implements ContainerFactoryPlug
   protected EntityTypeManagerInterface $entityTypeManager;
 
   /**
+   * The mode manager, asked whether the dropdown is offered at all.
+   */
+  protected ModeManagerInterface $modeManager;
+
+  /**
    * {@inheritdoc}
    */
   public static function create(ContainerInterface $container, array $configuration, $plugin_id, $plugin_definition): static {
     $instance = new static($configuration, $plugin_id, $plugin_definition);
     $instance->formBuilder = $container->get('form_builder');
     $instance->entityTypeManager = $container->get('entity_type.manager');
+    $instance->modeManager = $container->get('ai_agent_modes.manager');
     return $instance;
   }
 
@@ -98,6 +105,13 @@ class AiAgentModeSelectorBlock extends BlockBase implements ContainerFactoryPlug
    * {@inheritdoc}
    */
   public function build(): array {
+    if (!$this->modeManager->dropdownEnabled()) {
+      // The site has switched the dropdown off, so this block renders nothing
+      // rather than offering a choice the rest of the site has stopped making.
+      return [
+        '#cache' => ['tags' => ['config:ai_agent_modes.settings']],
+      ];
+    }
     $agent = $this->resolveAgent();
     return $this->formBuilder->getForm(
       AiAgentModeSelectorForm::class,

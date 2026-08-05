@@ -37,3 +37,58 @@ function ai_agent_modes_post_update_add_chatbot_position(): void {
     $settings->set('chatbot_position', 'above_chat')->save();
   }
 }
+
+/**
+ * Adds the speech settings, both directions switched off.
+ */
+function ai_agent_modes_post_update_add_speech(): void {
+  $settings = \Drupal::configFactory()->getEditable('ai_agent_modes.settings');
+  // Off on an existing site: a chat that neither listened nor spoke yesterday
+  // should not start doing either because the module was updated.
+  if ($settings->get('speech_to_text') === NULL) {
+    $settings->set('speech_to_text', [
+      'enabled' => FALSE,
+      'position' => 'input_start',
+      'language' => 'browser',
+      'display_interim_results' => TRUE,
+      'stop_after_submit' => TRUE,
+      'submit_after_silence' => TRUE,
+      'submit_after_silence_ms' => 4000,
+      'interim_color' => '',
+      'final_color' => '',
+      'commands' => [
+        'stop' => '',
+        'pause' => '',
+        'resume' => '',
+        'remove_all_text' => '',
+        'submit' => '',
+        'command_mode' => '',
+        'substrings' => TRUE,
+        'case_sensitive' => FALSE,
+      ],
+      'translations' => '',
+    ]);
+  }
+  if ($settings->get('text_to_speech') === NULL) {
+    $settings->set('text_to_speech', [
+      'enabled' => FALSE,
+      'language' => 'browser',
+      'voice_name' => '',
+      'pitch' => 1.0,
+      'rate' => 1.0,
+      'volume' => 1.0,
+    ]);
+  }
+  $settings->save();
+}
+
+/**
+ * Adds the switch that offers the mode dropdown, left on.
+ */
+function ai_agent_modes_post_update_add_show_dropdown(): void {
+  $settings = \Drupal::configFactory()->getEditable('ai_agent_modes.settings');
+  if ($settings->get('show_dropdown') === NULL) {
+    // On, because a site that had the dropdown yesterday should keep it.
+    $settings->set('show_dropdown', TRUE)->save();
+  }
+}

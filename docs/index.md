@@ -27,6 +27,7 @@ between sites.
 | --- | --- | --- |
 | [Choosing a mode](./info/choosing-a-mode.md) | Anyone using the assistant | Where the dropdown is, how to pick a mode, how long the choice lasts, and why the dropdown is sometimes not there |
 | [Managing modes](./info/managing-modes.md) | Site administrators | Creating, editing and deleting modes, every field on the form, the four dropdown placements, and the permission |
+| [Speaking and listening](./info/speech.md) | Site administrators | The microphone and reading replies aloud: both switches, the four microphone placements, the languages, the voice commands, and the per-assistant overrides |
 | [Developing with modes](./info/developing-with-modes.md) | Developers | The entity shape, shipping modes in config and recipes, the block and the render element, the JSON endpoints, and exactly how the steering is applied |
 | [Troubleshooting](./help/troubleshooting.md) | Everyone | The traps that look like bugs and are not |
 

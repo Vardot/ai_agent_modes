@@ -69,12 +69,114 @@ ai_agent_modes.settings:
     chatbot_position:
       type: string
       label: 'AI Chatbot dropdown position'
-      description: 'Where the mode dropdown sits in the AI Chatbot panel. above_chat puts it under the panel header and above the conversation, below_input under the message box, header inside the panel header row.'
+      description: 'Where the mode dropdown sits in the AI Chatbot panel. Not asked on the settings form, which covers the Drupal Canvas AI panel: this is the site default an AI Assistant falls back to when it sets no placement of its own. above_chat puts it under the panel header and above the conversation, below_input under the message box, header inside the panel header row.'
       constraints:
         Choice:
           - above_chat
           - below_input
           - header
+    show_dropdown:
+      type: boolean
+      label: 'Offer the mode dropdown in the chat'
+      description: 'When off, no mode dropdown is added to either chat panel. The modes themselves are untouched, and anything already scoped by configuration still applies.'
+    speech_to_text:
+      type: mapping
+      label: 'Speech to text'
+      description: "deep-chat's microphone, transcribed by the browser's own Web Speech support. Mirrors https://deepchat.dev/docs/speech#speechToText. Azure is not offered here because it needs a key or token, which does not belong in configuration."
+      mapping:
+        enabled:
+          type: boolean
+          label: 'Offer a microphone in the chat'
+        position:
+          type: string
+          label: 'Microphone position'
+          description: 'start and end follow the writing direction. input_end and input_start sit inside the message box, outside_end and outside_start in deep-chat own row beside it.'
+          constraints:
+            Choice:
+              - input_end
+              - input_start
+              - outside_end
+              - outside_start
+        language:
+          type: string
+          label: 'Dictation language'
+          description: 'browser leaves the choice to the browser, site follows the page language, anything else is a BCP 47 tag such as en-US or en-GB.'
+        display_interim_results:
+          type: boolean
+          label: 'Show words as they are recognised'
+        stop_after_submit:
+          type: boolean
+          label: 'Stop recording once the message is sent'
+        submit_after_silence:
+          type: boolean
+          label: 'Send after a pause in speaking'
+        submit_after_silence_ms:
+          type: integer
+          label: 'Length of that pause, in milliseconds'
+        interim_color:
+          type: string
+          label: 'Colour of words still being recognised'
+        final_color:
+          type: string
+          label: 'Colour of recognised words'
+        commands:
+          type: mapping
+          label: 'Voice commands'
+          description: 'Spoken phrases that drive the chat instead of being typed into it. An empty phrase is not listened for.'
+          mapping:
+            stop:
+              type: string
+              label: 'Stop listening'
+            pause:
+              type: string
+              label: 'Pause transcribing'
+            resume:
+              type: string
+              label: 'Resume transcribing'
+            remove_all_text:
+              type: string
+              label: 'Clear the message box'
+            submit:
+              type: string
+              label: 'Send the message'
+            command_mode:
+              type: string
+              label: 'Listen for commands only'
+            substrings:
+              type: boolean
+              label: 'Recognise a phrase inside a longer sentence'
+            case_sensitive:
+              type: boolean
+              label: 'Match the case of a phrase'
+        translations:
+          type: string
+          label: 'Corrections'
+          description: 'Words the recogniser hears wrongly, one "spoken|written" pair per line.'
+    text_to_speech:
+      type: mapping
+      label: 'Text to speech'
+      description: "Reads each reply aloud with the browser's own speech synthesis. Mirrors https://deepchat.dev/docs/speech#textToSpeech."
+      mapping:
+        enabled:
+          type: boolean
+          label: 'Read replies aloud'
+        language:
+          type: string
+          label: 'Reading language'
+          description: 'browser, site, or a BCP 47 tag.'
+        voice_name:
+          type: string
+          label: 'Voice'
+          description: 'The voice names differ by operating system, so a name that is not installed falls back to the default voice.'
+        pitch:
+          type: float
+          label: 'Pitch'
+        rate:
+          type: float
+          label: 'Speed'
+        volume:
+          type: float
+          label: 'Volume'
     canvas_position:
       type: string
       label: 'Canvas AI dropdown position'
@@ -117,3 +219,29 @@ ai_assistant_api.ai_assistant.*.third_party.ai_agent_modes:
           - above_chat
           - below_input
           - header
+    speech_to_text:
+      type: string
+      label: 'Offer a microphone in the chat'
+      description: 'Overrides ai_agent_modes.settings:speech_to_text.enabled for this assistant. Absent means the site setting applies.'
+      constraints:
+        Choice:
+          - 'on'
+          - 'off'
+    speech_to_text_position:
+      type: string
+      label: 'Microphone position'
+      description: 'Overrides ai_agent_modes.settings:speech_to_text.position for this assistant. Absent means the site setting applies.'
+      constraints:
+        Choice:
+          - input_end
+          - input_start
+          - outside_end
+          - outside_start
+    text_to_speech:
+      type: string
+      label: 'Read replies aloud'
+      description: 'Overrides ai_agent_modes.settings:text_to_speech.enabled for this assistant. Absent means the site setting applies.'
+      constraints:
+        Choice:
+          - 'on'
+          - 'off'

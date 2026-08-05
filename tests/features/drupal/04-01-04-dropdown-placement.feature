@@ -23,6 +23,9 @@ Feature: Choosing where the mode dropdown sits in the assistant panel
   # The rows run in order and the last one restores the shipped default
   # (toolbar), so the site is left exactly as it was found.
 
+  # The settings form groups its questions as tabs, so each scenario opens the
+  # "Mode dropdown" tab before touching the placement it is about.
+
   Background:
     Given I am a logged in user with the "Webmaster" user
 
@@ -31,10 +34,12 @@ Feature: Choosing where the mode dropdown sits in the assistant panel
   # of the same words, so a label match would be ambiguous.
   Scenario Outline: The "<label>" setting is what the Canvas panel is told to use
     When I navigate to "/admin/config/ai/agent-modes/settings"
+     And I open the "Mode dropdown" settings tab
      And I select radio button "#edit-canvas-position-<id>"
      And I save the form
     Then I should see "The configuration options have been saved."
     When I navigate to "/admin/config/ai/agent-modes/settings"
+     And I open the "Mode dropdown" settings tab
     Then the radio button "#edit-canvas-position-<id>" should be selected
     When I navigate to "/ai-agent-modes/options/test_orchestrator"
     Then the options endpoint should report the "<placement>" dropdown placement
@@ -47,20 +52,14 @@ Feature: Choosing where the mode dropdown sits in the assistant panel
       | Under the message box     | below-input  | below_input  |
       | In the toolbar (compact)  | toolbar      | toolbar      |
 
-  # The AI Chatbot panel has its own placement question, whose value never
-  # reaches the options endpoint (the chatbot script is handed it directly), so
-  # this row is asserted on the form alone.
-  Scenario Outline: The AI Chatbot panel keeps the "<label>" placement it was given
+  # The AI Chatbot panel is no longer asked about on this form: the settings form
+  # covers the Drupal Canvas AI panel, and that panel's placement is a site-wide
+  # choice because it belongs to no single assistant. The chatbot panel's own
+  # placement is decided per AI Assistant instead, on the assistant's own form,
+  # falling back to the site default when it says nothing.
+  Scenario: The settings form asks about the Drupal Canvas AI panel only
     When I navigate to "/admin/config/ai/agent-modes/settings"
-     And I select radio button "#edit-chatbot-position-<id>"
-     And I save the form
-    Then I should see "The configuration options have been saved."
-    When I navigate to "/admin/config/ai/agent-modes/settings"
-    Then the radio button "#edit-chatbot-position-<id>" should be selected
+     And I open the "Mode dropdown" settings tab
+    Then I should see "Where should the dropdown appear in the Drupal Canvas AI panel?"
+     And I should not see "Where should the dropdown appear in the AI Chatbot panel?"
      And I the page should not have PHP errors
-
-    Examples: The three placements the AI Chatbot panel offers
-      | label                                        | id           |
-      | Under the message box                        | below-input  |
-      | In the panel header, beside the assistant     | header       |
-      | Above the chat, under the panel header        | above-chat   |

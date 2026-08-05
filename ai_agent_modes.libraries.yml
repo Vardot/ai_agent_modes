@@ -8,7 +8,7 @@ chat:
     - core/once
 
 canvas_ai:
-  version: 1.0.8
+  version: 1.0.11
   js:
     js/canvas-ai.js: {}
   dependencies:
@@ -17,10 +17,29 @@ canvas_ai:
     - core/once
 
 chatbot_deepchat:
-  version: 1.0.10
+  version: 1.0.11
   js:
     js/chatbot-deepchat.js: {}
   dependencies:
     - core/drupal
     - core/drupalSettings
+    - core/once
+
+speech:
+  version: 1.0.12
+  js:
+    js/speech.js: {}
+  dependencies:
+    - core/drupal
+    - core/drupalSettings
+
+settings_form:
+  version: 1.0.2
+  css:
+    theme:
+      css/settings-form.css: {}
+  js:
+    js/settings-form.js: {}
+  dependencies:
+    - core/drupal
     - core/once

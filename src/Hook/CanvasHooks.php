@@ -7,6 +7,7 @@ namespace Drupal\ai_agent_modes\Hook;
 use Drupal\Core\DependencyInjection\ContainerInjectionInterface;
 use Drupal\Core\Extension\ModuleHandlerInterface;
 use Drupal\Core\Hook\Attribute\Hook;
+use Drupal\ai_agent_modes\ModeManagerInterface;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 
 /**
@@ -32,9 +33,12 @@ class CanvasHooks implements ContainerInjectionInterface {
    *
    * @param \Drupal\Core\Extension\ModuleHandlerInterface $moduleHandler
    *   The module handler.
+   * @param \Drupal\ai_agent_modes\ModeManagerInterface $modeManager
+   *   The mode manager, asked whether the dropdown is offered at all.
    */
   public function __construct(
     protected ModuleHandlerInterface $moduleHandler,
+    protected ModeManagerInterface $modeManager,
   ) {}
 
   /**
@@ -43,6 +47,7 @@ class CanvasHooks implements ContainerInjectionInterface {
   public static function create(ContainerInterface $container): static {
     return new static(
       $container->get('module_handler'),
+      $container->get('ai_agent_modes.manager'),
     );
   }
 
@@ -58,6 +63,11 @@ class CanvasHooks implements ContainerInjectionInterface {
       return;
     }
     if (!$this->moduleHandler->moduleExists('canvas_ai')) {
+      return;
+    }
+    // Off means off: nothing is attached, so the panel never asks for options
+    // and never draws a dropdown.
+    if (!$this->modeManager->dropdownEnabled()) {
       return;
     }
     $libraries[self::CANVAS_UI_LIBRARY]['dependencies'][] = 'ai_agent_modes/canvas_ai';

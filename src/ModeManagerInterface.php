@@ -141,6 +141,20 @@ interface ModeManagerInterface {
   public function restrictedTools(ScopePayload $payload, array $entity_tools): array;
 
   /**
+   * Whether the mode dropdown is offered at all.
+   *
+   * The site switch, asked before any dropdown work is done: no behaviour is
+   * attached to a chat, no options are listed, and no selector is rendered when
+   * this is off. The modes themselves are untouched, and anything already
+   * scoped by configuration keeps applying.
+   *
+   * @return bool
+   *   TRUE when the dropdown may be offered. An unset setting counts as TRUE,
+   *   so a site upgraded before the switch existed keeps the dropdown it had.
+   */
+  public function dropdownEnabled(): bool;
+
+  /**
    * Whether the site has any AI agent mode at all.
    *
    * A cheap gate, so an agent on a site with no modes never has its function
