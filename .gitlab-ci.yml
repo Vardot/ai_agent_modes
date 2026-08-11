@@ -8,11 +8,11 @@
 #   https://project.pages.drupalcode.org/gitlab_templates/
 #
 # On top of the template it adds:
-#   - 'eslint (step definitions)': lints the tests/ webship-js suite (CommonJS
+#   - 'eslint (step definitions)': lints the tests/ varbase-e2e suite (CommonJS
 #     Node + Cucumber globals) with its own tests/.eslintrc.json. The template
 #     ESLint job keeps linting the module's browser js/ with Drupal core's
 #     config; tests/ is kept out of that run via .eslintignore.
-#   - The Varbase functional testing suite (webship-js: Playwright + Cucumber)
+#   - The Varbase functional testing suite (varbase-e2e: Playwright + Cucumber)
 #     BDD acceptance suite, tested against Drupal CMS - the distribution that
 #     ships the AI Assistant chatbot (drupal_cms_ai / ai_chatbot) and Canvas AI
 #     that this module integrates with. A default provider-free lane plus an
@@ -52,7 +52,7 @@ phpunit:
 cspell:
   allow_failure: false
 
-# ─── ESLint on the webship-js step definitions ────────────────────────────────
+# ─── ESLint on the varbase-e2e step definitions ────────────────────────────────
 # The tests/ suite is CommonJS with Node / Cucumber globals, so it uses its own
 # tests/.eslintrc.json instead of Drupal core's browser config (which the
 # template ESLint job applies to the module's js/). tests/ is excluded from that
@@ -71,7 +71,7 @@ cspell:
     - npm install --no-save eslint@8 eslint-config-prettier@8
     - node ./node_modules/eslint/bin/eslint.js --no-ignore tests/step-definitions
 
-# ─── Varbase functional testing suite (webship-js: Playwright + Cucumber) ─────
+# ─── Varbase functional testing suite (varbase-e2e: Playwright + Cucumber) ─────
 # Build a Drupal CMS site with this module via a Composer path repository, serve
 # it with Apache against the template's MySQL service, apply the testing recipe
 # (which enables the AI stack, seeds a parent orchestrator + two sub-agents + an
@@ -128,7 +128,7 @@ cspell:
       - tests/videos
     expire_in: 1 week
   before_script:
-    # Node 22 + Playwright (yarn 4 needs the node-modules linker; webship-js's
+    # Node 22 + Playwright (yarn 4 needs the node-modules linker; varbase-e2e's
     # postinstall can clobber cucumber.js, so back it up around yarn install).
     # Node 22, installed from the official tarball rather than through
     # NodeSource. The NodeSource setup script regularly fails on the runner with

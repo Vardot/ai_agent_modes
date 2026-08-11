@@ -1,34 +1,12 @@
 'use strict';
 
-/**
- * @file
- * Custom step definitions for the AI Agent Modes test suite.
- *
- * Every step drives the site through the browser only - no Drush, no shell.
- * The Mink-style navigation / assertion / form steps (`I am on ...`,
- * `I should see ...`, `I fill in ...`, `I press ...`), the JavaScript-error
- * check and the accessibility audits are all provided by webship-js. So are the
- * table-row assertions (`I should see "..." in the "..." row`) and the radio
- * assertions (`the radio button with value "..." should be selected`). Only the
- * steps below are module-specific: logging in a named test user, provisioning
- * the non-admin fixtures, asserting server-side access denial, asserting the
- * rendered dropdown's options, reading the options endpoint the chat surfaces
- * build their dropdown from (its labels, how many options it offers and which
- * dropdown placement it reports), and opening a row operation from an admin
- * listing.
- *
- * Navigation and waiting reuse webship-js's own helpers - gotoUrl (friendly
- * navigation errors) and waitForPageLoad (BBR smart-settle: DOM ready, network
- * idle, no pending AJAX/timers, DOM-quiet) - instead of raw Playwright waits,
- * and failures are wrapped with friendly().
- */
-
 const { Given, Then, When } = require('@cucumber/cucumber');
+
 const {
   friendly,
   gotoUrl,
   waitForPageLoad,
-} = require('webship-js/tests/step-definitions/webship');
+} = require('@vardot/varbase-e2e/tests/step-definitions/varbase-e2e');
 
 /**
  * Run a step body and rethrow any failure as a tester-friendly error.
@@ -43,60 +21,6 @@ async function attempt(body, message) {
     throw friendly(message, err);
   }
 }
-
-/**
- * Log in as a named test user defined in cucumber.shared.js
- * worldParameters.users.
- *
- * Uses Drupal's stable field IDs so the step is theme-independent (Olivero,
- * Claro/Gin and Gin all render `#edit-name` / `#edit-pass`).
- *
- * The step asserts the session was really established: a rejected login
- * re-renders the login form at /user/login with the reason in the message
- * region, and the step fails there, quoting that reason. Without that check a
- * failed login is silent and only surfaces later, as an unrelated step reading
- * an anonymous 403 page.
- *
- * Example #1: Given I am a logged in user with the "Webmaster" user
- * Example #2: Given I am a logged in user with the "webmaster" user
- * Example #3: Given I am a logged in user with the "Content editor" user
- * Example #4: Given I am a logged in user with the "Authenticated user" user
- */
-Given(/^I am a logged in user with( the)*( username)* "([^"]*)?"( user)?$/, async function (theCase, usernameCase, key, userCase) {
-  const users = this.parameters.users || {};
-  if (!(key in users)) {
-    throw new Error(`No user named "${key}" in cucumber.shared.js worldParameters.users`);
-  }
-  const { username, password } = users[key];
-  if (!username || !password) {
-    throw new Error(`User "${key}" is missing username or password in worldParameters.users`);
-  }
-  await attempt(async () => {
-    await this.context.clearCookies();
-    await gotoUrl(this.page, `${this.parameters.launchUrl}/user/login`);
-    await this.page.locator('#edit-name').fill(username);
-    await this.page.locator('#edit-pass').fill(password);
-    // Scope the submit to the login form so it works whether the active theme
-    // renders it as an <input> (Olivero / Claro / Gin) or a <button>, and never
-    // matches a header search button.
-    await this.page.locator('#user-login-form #edit-submit').first().click();
-    await waitForPageLoad(this.page, this.minWaitTime && this.minWaitTime.page);
-    const outcome = await this.page.evaluate(() => {
-      const region = document.querySelector('[data-drupal-messages]');
-      return {
-        url: window.location.href,
-        onLoginForm: !!document.querySelector('form#user-login-form'),
-        message: region ? region.textContent.replace(/\s+/g, ' ').trim() : '',
-      };
-    });
-    // Both conditions together: a rejected login re-renders the form at
-    // /user/login, while a login block elsewhere on a post-login page would
-    // match the form alone.
-    if (outcome.onLoginForm && outcome.url.includes('/user/login')) {
-      throw new Error(`the login form came back at ${outcome.url}, so no session was established. The site said: ${outcome.message || '(no message)'}`);
-    }
-  }, `Could not log in as "${key}"`);
-});
 
 /**
  * Assert the page does not contain a PHP error, fatal, warning, notice, or
@@ -430,9 +354,8 @@ When(/^(?:I |we )?open the "([^"]*)" operation in( the)* "([^"]*)" row$/, async 
   }, `Could not open the "${operation}" operation in the "${rowText}" row`);
 });
 
-
 /**
- * Resolve a webship-js named selector from the world registry (hydrated from
+ * Resolve a varbase-e2e named selector from the world registry (hydrated from
  * cucumber.shared.js's selectors.files - see tests/selectors/*.json). Throws on
  * an unknown name so a typo never silently passes through as a literal CSS
  * string.

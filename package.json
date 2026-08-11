@@ -1,6 +1,6 @@
 {
   "name": "ai_agent_modes",
-  "description": "Webship-js (Playwright + Cucumber) BDD suite for the AI Agent Modes Drupal module, tested against Drupal CMS.",
+  "description": "Varbase E2E (Playwright + Cucumber) BDD suite for the AI Agent Modes Drupal module, tested against Drupal CMS.",
   "license": "GPL-2.0",
   "private": true,
   "author": "Rajab Natshah",
@@ -25,7 +25,7 @@
     "canvas"
   ],
   "dependencies": {
-    "webship-js": "~2.0.4"
+    "@vardot/varbase-e2e": "~2.0.1"
   },
   "devDependencies": {
     "@cucumber/pretty-formatter": "^3.3",

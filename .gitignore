@@ -1,7 +1,7 @@
 node_modules/
 vendor/
 .env
-# webship-js (Playwright + Cucumber) run artefacts.
+# varbase-e2e (Playwright + Cucumber) run artefacts.
 tests/videos/
 tests/reports/
 tests/screenshots/

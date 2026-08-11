@@ -40,6 +40,8 @@ Feature: Who may reach the mode admin surfaces and the dropdown data
   Scenario: An authenticated non-admin still gets the dropdown options
     Given I am a logged in user with the "Webmaster" user
      And I add testing users
+     # Drop the Webmaster session so the next login gets the login form.
+     And I am an anonymous user
     Given I am a logged in user with the "Authenticated user" user
     When I navigate to "/ai-agent-modes/options/test_orchestrator"
     Then the JSON response should contain "let the assistant decide"

@@ -7,10 +7,10 @@ Two layers of automated tests ship with this module.
 - `Unit/Hook/ChatbotHooksTest.php`, `Kernel/ModeManagerTest.php`,
   `Functional/AiAgentModeCrudTest.php` - run by the Drupal GitLabCI template.
 
-## Varbase functional testing suite (webship-js: Playwright + Cucumber)
+## Varbase functional testing suite (varbase-e2e: Playwright + Cucumber)
 
 A browser BDD acceptance suite under `tests/features/drupal/`, driven through
-[webship-js](https://webship.co/docs/webship-js/2.0.x) (Playwright + Cucumber).
+[varbase-e2e](https://varbase-e2e.co/docs/varbase-e2e/2.0.x) (Playwright + Cucumber).
 It is tested against **Drupal CMS**, the distribution that ships the AI
 Assistant chatbot (`drupal_cms_ai` / `ai_chatbot`) and Canvas AI this module
 integrates with.
