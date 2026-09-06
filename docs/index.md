@@ -79,4 +79,4 @@ someone created on it, or one that arrived with a recipe.
 
 ## About this documentation
 
-Written for the `1.0.x` branch, verified against release `1.0.0-alpha2`.
+Written for the `1.0.x` branch, verified against release `1.0.0`.
