@@ -25,7 +25,7 @@
     "canvas"
   ],
   "dependencies": {
-    "@vardot/varbase-e2e": "~2.0.1"
+    "@vardot/varbase-e2e": "^2.0.4"
   },
   "devDependencies": {
     "@cucumber/pretty-formatter": "^3.3",

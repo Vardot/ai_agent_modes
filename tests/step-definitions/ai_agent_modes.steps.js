@@ -49,29 +49,6 @@ Then(/^(?:I |we )?the page should not have PHP errors$/, async function () {
 });
 
 /**
- * Navigate to a path and assert the server denied access. Checks the HTTP
- * response status (403) first - theme-agnostic - and falls back to the Drupal
- * "not authorized" body text.
- *
- * Example #1: Then I am denied access to "/admin/config/ai/agent-modes"
- * Example #2: And I am denied access to "/admin/config/ai/agent-modes/add"
- * Example #3: Then we am denied access to "/admin/config/ai/agent-modes/settings"
- */
-Then(/^(?:I |we )?am denied access to "([^"]*)"$/, async function (path) {
-  await attempt(async () => {
-    const response = await this.page.goto(`${this.parameters.launchUrl}${path}`, { waitUntil: 'networkidle' });
-    const status = response ? response.status() : 0;
-    if (status === 403) {
-      return;
-    }
-    const body = await this.page.content();
-    if (!/not authorized to access this page|access denied/i.test(body)) {
-      throw new Error(`Expected access to "${path}" to be denied (HTTP 403), got HTTP ${status}`);
-    }
-  }, `Expected to be denied access to "${path}"`);
-});
-
-/**
  * Set a user's password from the admin account edit form.
  *
  * An administrator editing somebody else's account is not asked for a current
