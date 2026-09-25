@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Drupal\Tests\ai_agent_modes\Kernel;
 
 use Drupal\KernelTests\KernelTestBase;
+use PHPUnit\Framework\Attributes\Group;
 
 /**
  * Tests that an updated site gets the same speech defaults as a new one.
@@ -16,9 +17,8 @@ use Drupal\KernelTests\KernelTestBase;
  * updated site waiting three. The hook is run here against a site whose speech
  * settings have been taken away, and what it writes is compared with what a
  * fresh install ships.
- *
- * @group ai_agent_modes
  */
+#[Group('ai_agent_modes')]
 class SpeechDefaultsTest extends KernelTestBase {
 
   /**

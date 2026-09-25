@@ -10,6 +10,7 @@ use Drupal\ai_agent_modes\ActiveAssistantContext;
 use Drupal\ai_agent_modes\EventSubscriber\AssistantScopeSubscriber;
 use Drupal\ai_agent_modes\ModeManagerInterface;
 use Drupal\ai_agent_modes\SelectionStoreInterface;
+use PHPUnit\Framework\Attributes\Group;
 
 /**
  * Guards the optionality of the AI Assistant API integration.
@@ -20,9 +21,9 @@ use Drupal\ai_agent_modes\SelectionStoreInterface;
  * rebuild, so this test is the mechanical guard against that being "tidied up"
  * into a ::EVENT_NAME reference later.
  *
- * @group ai_agent_modes
  * @coversDefaultClass \Drupal\ai_agent_modes\EventSubscriber\AssistantScopeSubscriber
  */
+#[Group('ai_agent_modes')]
 class AssistantScopeSubscriberOptionalityTest extends UnitTestCase {
 
   /**

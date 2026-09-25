@@ -8,6 +8,7 @@ use Drupal\Core\Form\FormState;
 use Drupal\KernelTests\KernelTestBase;
 use Drupal\ai_agent_modes\Hook\AssistantSettingsHooks;
 use Drupal\ai_agent_modes\Hook\SpeechHooks;
+use PHPUnit\Framework\Attributes\Group;
 
 /**
  * Tests the per-assistant overrides written onto the AI Assistant entity.
@@ -21,9 +22,9 @@ use Drupal\ai_agent_modes\Hook\SpeechHooks;
  * form, because that form refuses to save unless the site has a working AI
  * provider and model, which has nothing to do with what is being tested here.
  *
- * @group ai_agent_modes
  * @coversDefaultClass \Drupal\ai_agent_modes\Hook\AssistantSettingsHooks
  */
+#[Group('ai_agent_modes')]
 class AssistantOverridesTest extends KernelTestBase {
 
   /**

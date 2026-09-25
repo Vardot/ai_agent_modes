@@ -5,13 +5,13 @@ declare(strict_types=1);
 namespace Drupal\Tests\ai_agent_modes\Functional;
 
 use Drupal\Tests\BrowserTestBase;
+use PHPUnit\Framework\Attributes\Group;
 use PHPUnit\Framework\Attributes\RunTestsInSeparateProcesses;
 
 /**
  * Tests AI agent mode CRUD and the selector dropdown from live sub-agents.
- *
- * @group ai_agent_modes
  */
+#[Group('ai_agent_modes')]
 #[RunTestsInSeparateProcesses]
 class AiAgentModeCrudTest extends BrowserTestBase {
 

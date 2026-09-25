@@ -14,6 +14,7 @@ use Drupal\ai_agent_modes\SelectionStoreInterface;
 use Drupal\ai_agents\Event\AgentRequestEvent;
 use Drupal\ai_agents\Event\AgentStartedExecutionEvent;
 use Drupal\ai_agents\Event\BuildSystemPromptEvent;
+use PHPUnit\Framework\Attributes\Group;
 use PHPUnit\Framework\Attributes\RunTestsInSeparateProcesses;
 
 /**
@@ -24,9 +25,9 @@ use PHPUnit\Framework\Attributes\RunTestsInSeparateProcesses;
  * that a withholding mode really removes sub-agent tools from the set the
  * provider is given.
  *
- * @group ai_agent_modes
  * @coversDefaultClass \Drupal\ai_agent_modes\EventSubscriber\AgentScopeSubscriber
  */
+#[Group('ai_agent_modes')]
 #[RunTestsInSeparateProcesses]
 class AgentScopeSubscriberTest extends KernelTestBase {
 

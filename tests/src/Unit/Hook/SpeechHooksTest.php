@@ -13,6 +13,7 @@ use Drupal\Core\Entity\EntityTypeManagerInterface;
 use Drupal\Core\Extension\ModuleHandlerInterface;
 use Drupal\Tests\UnitTestCase;
 use Drupal\ai_agent_modes\Hook\SpeechHooks;
+use PHPUnit\Framework\Attributes\Group;
 
 /**
  * Tests the speech settings carried to the chat by SpeechHooks.
@@ -22,9 +23,9 @@ use Drupal\ai_agent_modes\Hook\SpeechHooks;
  * the two payloads handed to deep-chat, and whose choice wins when one AI
  * Assistant disagrees with the site setting.
  *
- * @group ai_agent_modes
  * @coversDefaultClass \Drupal\ai_agent_modes\Hook\SpeechHooks
  */
+#[Group('ai_agent_modes')]
 class SpeechHooksTest extends UnitTestCase {
 
   /**

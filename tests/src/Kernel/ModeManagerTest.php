@@ -14,15 +14,16 @@ use Drupal\ai_agent_modes\AiAgentModeInterface;
 use Drupal\ai_agent_modes\ModeManager;
 use Drupal\ai_agent_modes\ModeManagerInterface;
 use Drupal\ai_agent_modes\ScopePayload;
+use PHPUnit\Framework\Attributes\Group;
 use PHPUnit\Framework\Attributes\RunTestsInSeparateProcesses;
 use Psr\Log\AbstractLogger;
 
 /**
  * Tests the mode manager: sub-agent listing, resolution and scope application.
  *
- * @group ai_agent_modes
  * @coversDefaultClass \Drupal\ai_agent_modes\ModeManager
  */
+#[Group('ai_agent_modes')]
 #[RunTestsInSeparateProcesses]
 class ModeManagerTest extends KernelTestBase {
 

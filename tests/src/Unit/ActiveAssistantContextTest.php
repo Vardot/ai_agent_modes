@@ -6,13 +6,14 @@ namespace Drupal\Tests\ai_agent_modes\Unit;
 
 use Drupal\Tests\UnitTestCase;
 use Drupal\ai_agent_modes\ActiveAssistantContext;
+use PHPUnit\Framework\Attributes\Group;
 
 /**
  * Tests the request-scoped assistant identity carrier.
  *
- * @group ai_agent_modes
  * @coversDefaultClass \Drupal\ai_agent_modes\ActiveAssistantContext
  */
+#[Group('ai_agent_modes')]
 class ActiveAssistantContextTest extends UnitTestCase {
 
   /**

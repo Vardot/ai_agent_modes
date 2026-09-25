@@ -13,6 +13,7 @@ use Drupal\Core\Extension\ModuleHandlerInterface;
 use Drupal\Tests\UnitTestCase;
 use Drupal\ai_agent_modes\Hook\ChatbotHooks;
 use Drupal\ai_agent_modes\ModeManagerInterface;
+use PHPUnit\Framework\Attributes\Group;
 
 /**
  * Tests the DeepChat block integration added by ChatbotHooks.
@@ -24,9 +25,9 @@ use Drupal\ai_agent_modes\ModeManagerInterface;
  * soft, client-side integration for that second surface; see
  * docs/ai_agent_modes/00-analysis.md for how this was root-caused.
  *
- * @group ai_agent_modes
  * @coversDefaultClass \Drupal\ai_agent_modes\Hook\ChatbotHooks
  */
+#[Group('ai_agent_modes')]
 class ChatbotHooksTest extends UnitTestCase {
 
   /**

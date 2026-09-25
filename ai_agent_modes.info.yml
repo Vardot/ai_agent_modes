@@ -2,7 +2,7 @@ name: 'AI Agent Modes'
 type: module
 description: 'Adds a "Mode" selector that steers an AI agent toward a curated subset of its sub-agents by prepending a scoped instruction, so the orchestrator routes work to the right sub-agent.'
 package: 'AI'
-core_version_requirement: ^11
+core_version_requirement: ^11 || ^12
 dependencies:
   - 'ai:ai'
   # The mode scope subscribes to BuildSystemPromptEvent and
