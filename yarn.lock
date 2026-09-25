@@ -561,7 +561,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@vardot/varbase-e2e@npm:^2.0.4":
+"@vardot/varbase-e2e@npm:^2.0.7":
   version: 2.0.7
   resolution: "@vardot/varbase-e2e@npm:2.0.7"
   dependencies:
@@ -625,7 +625,7 @@ __metadata:
   resolution: "ai_agent_modes@workspace:."
   dependencies:
     "@cucumber/pretty-formatter": "npm:^3.3"
-    "@vardot/varbase-e2e": "npm:^2.0.4"
+    "@vardot/varbase-e2e": "npm:^2.0.7"
     eslint: "npm:~8"
     eslint-config-prettier: "npm:~8"
   languageName: unknown
